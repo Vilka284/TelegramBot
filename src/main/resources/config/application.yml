@@ -1,0 +1,14 @@
+connection:
+  url: jdbc:postgresql://localhost:5432/DATABASE_NAME
+  poolSize: 5
+  username: USERNAME
+  password: PASSWORD
+
+telegram:
+  bot:
+    username: QueueBot
+    token: token
+  owner:
+    name: name
+    tag: tag
+
