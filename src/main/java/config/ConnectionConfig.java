@@ -12,4 +12,6 @@ public final class ConnectionConfig {
     private int poolSize;
     private String username;
     private String password;
+    private String dialect;
+    private String driver;
 }

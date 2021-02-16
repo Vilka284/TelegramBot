@@ -2,6 +2,14 @@ package bot;
 
 import config.Configuration;
 import config.ConfigurationHolder;
+import dao.ParticipantDAO;
+import dao.QueueDAO;
+import dao.ScheduleDAO;
+import dao.SubjectDAO;
+import entity.Participant;
+import entity.Queue;
+import entity.Schedule;
+import entity.Subject;
 import enumeration.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +26,11 @@ public class Bot extends TelegramLongPollingBot {
 
     private final Logger logger = LoggerFactory.getLogger(Logger.class);
     private final Configuration configuration = ConfigurationHolder.getConfiguration();
+
+    private final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
+    private final QueueDAO queueDAO = QueueDAO.getInstance();
+    private final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
+    private final SubjectDAO subjectDAO = SubjectDAO.getInstance();
 
     @Override
     public String getBotUsername() {
@@ -39,18 +52,56 @@ public class Bot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String message = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
+
+            // check operations
+            try {
+                long id = Long.parseLong(message);
+                Participant participant = participantDAO.getParticipantByChatId(chatId);
+                if (participant != null) {
+                    String operation = participant.getOperation();
+                    if (operation.equals(Command.QUEUE.getCommand())) {
+                        // TODO queue participant in selected schedule
+                    } else if (operation.equals(Command.DEQUEUE.getCommand())) {
+                        // TODO dequeue participant in selected schedule
+                    } else if (operation.equals(Command.WATCH.getCommand())) {
+                        // TODO show participant selected queue
+                    } else {
+                        sendHelp(chatId);
+                    }
+                }
+            } catch (NumberFormatException e) {
+                logger.debug(e.getMessage());
+            }
+
+            // check commands
             if (message.equals(Command.START.getCommand())) {
                 // TODO add new participant
+                if (participantDAO.getParticipantByChatId(chatId) == null) {
+                    Participant participant = new Participant();
+                    participant.setTag(update.getMessage().getFrom().getUserName());
+                    participant.setChatId(chatId);
+                    participant.setOperation(Command.NONE.getCommand());
+                    participantDAO.addParticipant(participant);
+                    sendSimpleMessage(chatId, "Вітаю, тепер ти можеш брати участь у чергах. Напиши /help для того, щоб побачити команди.");
+                } else {
+                    sendSimpleMessage(chatId, "Ти вже є учасником.");
+                }
             } else if (message.equals(Command.WATCH.getCommand())) {
                 // TODO get schedule
+                Participant participant = participantDAO.getParticipantByChatId(chatId);
+                participant.setOperation(Command.WATCH.getCommand());
             } else if (message.equals(Command.QUEUE.getCommand())) {
                 // TODO show schedule to participant
+                Participant participant = participantDAO.getParticipantByChatId(chatId);
+                participant.setOperation(Command.QUEUE.getCommand());
             } else if (message.equals(Command.DEQUEUE.getCommand())) {
                 // TODO show schedule to participant
+                Participant participant = participantDAO.getParticipantByChatId(chatId);
+                participant.setOperation(Command.DEQUEUE.getCommand());
             } else if (message.equals(Command.HELP.getCommand())) {
                 sendHelp(chatId);
             } else {
-                sendWrongCommand(chatId, "Я тебе не розумію, скористайся командою /help");
+                sendSimpleMessage(chatId, "Я тебе не розумію, скористайся командою /help");
             }
         }
     }
@@ -70,8 +121,15 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    private void sendWrongCommand(long chatId, String message) {
-        //TODO
+    private void sendSimpleMessage(long chatId, String text) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(String.valueOf(chatId));
+        sendMessage.setText(text);
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     @Override

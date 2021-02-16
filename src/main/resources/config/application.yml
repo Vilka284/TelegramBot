@@ -1,14 +1,15 @@
 connection:
-  url: jdbc:postgresql://localhost:5432/DATABASE_NAME
+  url: jdbc:postgresql://localhost:5432/queue
   poolSize: 5
-  username: USERNAME
-  password: PASSWORD
+  username: username
+  password: password
+  dialect: org.hibernate.dialect.PostgreSQL82Dialect
+  driver: org.postgresql.Driver
 
 telegram:
   bot:
     username: QueueBot
     token: token
   owner:
-    name: name
-    tag: tag
-
+    name: Andrii
+    tag: crinitus_vulpi

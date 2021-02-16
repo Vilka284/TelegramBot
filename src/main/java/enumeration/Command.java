@@ -6,7 +6,8 @@ public enum Command {
     WATCH("/watch", "Дивитись чергу\n", true),
     QUEUE("/queue", "Записатись в чергу\n", true),
     DEQUEUE("/dequeue", "Вийти з черги", true),
-    HELP("/help", "", false);
+    HELP("/help", "", false),
+    NONE("none", "", false);
 
     private final String command;
     private final String help;
