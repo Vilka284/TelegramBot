@@ -18,7 +18,7 @@ public class Participant {
     private String tag;
 
     @Basic
-    @Column(name="chat_id")
+    @Column(name = "chat_id")
     private Long chatId;
 
     @Basic

@@ -18,6 +18,7 @@ import java.util.Properties;
 
 public class HibernateUtil {
 
+    public static final ThreadLocal<Session> session = new ThreadLocal<Session>();
     private static final SessionFactory sessionFactory;
 
     static {
@@ -37,7 +38,7 @@ public class HibernateUtil {
 
             settings.put(Environment.CURRENT_SESSION_CONTEXT_CLASS, "thread");
 
-            settings.put(Environment.HBM2DDL_AUTO, "none");
+            settings.put(Environment.HBM2DDL_AUTO, "update");
 
             configuration.setProperties(settings);
 
@@ -55,10 +56,8 @@ public class HibernateUtil {
         }
     }
 
-    public static final ThreadLocal session = new ThreadLocal();
-
     public static Session currentSession() throws HibernateException {
-        Session s = (Session) session.get();
+        Session s = session.get();
         if (s == null) {
             s = sessionFactory.openSession();
             session.set(s);
@@ -67,7 +66,7 @@ public class HibernateUtil {
     }
 
     public static void closeSession() throws HibernateException {
-        Session s = (Session) session.get();
+        Session s = session.get();
         session.set(null);
         if (s != null)
             s.close();

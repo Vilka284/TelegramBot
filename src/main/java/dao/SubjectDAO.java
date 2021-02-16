@@ -1,26 +1,38 @@
 package dao;
 
+import com.github.fluent.hibernate.transformer.FluentHibernateResultTransformer;
 import entity.Subject;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import util.HibernateUtil;
 
 import java.util.List;
 
-public class SubjectDAO {
+public final class SubjectDAO {
 
     private static SubjectDAO instance;
+    private static Session session;
 
     public static SubjectDAO getInstance() {
+        session = HibernateUtil.currentSession();
         return instance != null ? instance : new SubjectDAO();
     }
 
+    public void addSubject(Subject subject) {
+        final Transaction transaction = session.beginTransaction();
+        session.save(subject);
+        transaction.commit();
+    }
+
     public Subject getSubjectById(long id) {
-        // TODO
-        return null;
+        return session.load(Subject.class, id);
     }
 
     public List<Subject> getAllSubjects() {
-        // TODO
-        return null;
+        final Query query = session.createQuery("from Subject");
+        return (List<Subject>) query
+                .setResultTransformer(new FluentHibernateResultTransformer(Subject.class))
+                .list();
     }
-
-
 }
