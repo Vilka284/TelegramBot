@@ -16,4 +16,11 @@ public class Participant {
 
     @Basic
     private String tag;
+
+    @Basic
+    @Column(name="chat_id")
+    private Long chatId;
+
+    @Basic
+    private String operation;
 }

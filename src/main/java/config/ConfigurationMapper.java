@@ -19,7 +19,7 @@ public class ConfigurationMapper {
         try (InputStream in = Files.newInputStream(Paths.get(configFile))) {
             Configuration config = yamlMapper.loadAs(in, Configuration.class);
             ConfigurationHolder.setConfiguration(config);
-            logger.debug(config.toString());
+            logger.info(config.toString());
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
