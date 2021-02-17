@@ -1,6 +1,7 @@
 package dao;
 
 import entity.Participant;
+import entity.Schedule;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -29,12 +30,18 @@ public final class ParticipantDAO {
     }
 
     public Participant getParticipantByChatId(long chatId) {
-        return session.load(Participant.class, chatId);
+        final Query query = session.createQuery("from Participant where chat_id = " + chatId);
+        return (Participant) query.uniqueResult();
     }
 
     public List<Participant> getAllParticipants() {
         final Query query = session.createQuery("from Participant");
         return (List<Participant>) query.list();
+    }
+
+    public void updateParticipantOperationStatus(long id, String operation) {
+        Participant participant = session.load(Participant.class, id);
+        participant.setOperation(operation);
     }
 
     public void removeParticipant(long id) {

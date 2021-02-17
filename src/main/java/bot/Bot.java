@@ -7,7 +7,6 @@ import dao.QueueDAO;
 import dao.ScheduleDAO;
 import dao.SubjectDAO;
 import entity.Participant;
-import entity.Queue;
 import entity.Schedule;
 import enumeration.Command;
 import enumeration.Day;
@@ -62,79 +61,108 @@ public class Bot extends TelegramLongPollingBot {
                 long operationId = Long.parseLong(message);
                 Participant participant = participantDAO.getParticipantByChatId(chatId);
 
-                String operation = participant.getOperation();
-                if (operation.equals(Command.QUEUE.getCommand())) {
-                    // TODO queue participant in selected schedule
-                } else if (operation.equals(Command.DEQUEUE.getCommand())) {
-                    // TODO dequeue participant in selected schedule
-                } else if (operation.equals(Command.WATCH.getCommand())) {
-                    // TODO show participant selected queue
-                } else {
-                    sendHelp(chatId);
+                if (participant != null) {
+                    String operation = participant.getOperation();
+                    if (operation.equals(Command.QUEUE.getCommand())) {
+                        // TODO queue participant in selected schedule
+                        addParticipantToQueueByScheduleId(chatId, participant, operationId);
+                    } else if (operation.equals(Command.DEQUEUE.getCommand())) {
+                        // TODO dequeue participant in selected schedule
+                        removeParticipantFromQueueByScheduleId(chatId, participant, operationId);
+                    } else if (operation.equals(Command.WATCH.getCommand())) {
+                        // TODO show participant selected queue
+                        showQueueByScheduleId(chatId, participant, operationId);
+                    } else {
+                        sendHelp(chatId);
+                    }
+                    participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                 }
             } catch (NumberFormatException | ObjectNotFoundException e) {
                 logger.debug(e.getMessage());
             }
 
-            try {
-                Participant participant = participantDAO.getParticipantByChatId(chatId);
-
-                // check commands
+            // check commands
+            Participant participant = participantDAO.getParticipantByChatId(chatId);
+            if (participant != null) {
                 if (message.equals(Command.START.getCommand())) {
                     sendSimpleMessage(chatId, "Ти вже є учасником.");
                 } else if (message.equals(Command.WATCH.getCommand())) {
-                    sendSchedule(chatId, day);
-                    participant.setOperation(Command.WATCH.getCommand());
+                    sendSchedule(chatId, day, Command.WATCH.getCommand(), participant);
                 } else if (message.equals(Command.QUEUE.getCommand())) {
-                    sendAvailableQueues(chatId, day);
-                    participant.setOperation(Command.QUEUE.getCommand());
+                    sendSchedule(chatId, day, Command.QUEUE.getCommand(), participant);
                 } else if (message.equals(Command.DEQUEUE.getCommand())) {
-                    sendAvailableQueues(chatId, day);
-                    participant.setOperation(Command.DEQUEUE.getCommand());
+                    sendSchedule(chatId, day, Command.DEQUEUE.getCommand(), participant);
                 } else if (message.equals(Command.HELP.getCommand())) {
                     sendHelp(chatId);
                 } else {
                     sendSimpleMessage(chatId, "Я тебе не розумію, скористайся командою /help");
                 }
-            } catch (ObjectNotFoundException e) {
-                logger.debug(e.getMessage());
-
+            } else {
                 if (message.equals(Command.START.getCommand())) {
-                    Participant participant = new Participant();
-                    participant.setTag(update.getMessage().getFrom().getUserName());
-                    participant.setChatId(chatId);
-                    participant.setOperation(Command.NONE.getCommand());
-                    participantDAO.addParticipant(participant);
-                    sendSimpleMessage(chatId, "Вітаю, тепер ти можеш брати участь у чергах. Напиши /help для того, щоб побачити команди.");
+                    Participant newParticipant = new Participant();
+                    newParticipant.setTag(update.getMessage().getFrom().getUserName());
+                    newParticipant.setChatId(chatId);
+                    newParticipant.setOperation(Command.NONE.getCommand());
+                    participantDAO.addParticipant(newParticipant);
+                    sendSimpleMessage(chatId, "Вітаю \uD83D\uDC4B, тепер ти можеш брати участь у чергах.\n" +
+                            "Правила прості:\n" +
+                            "▪️Реєстрація в чергу відбувається в день здачі, для цього надішли команду /queue\n" +
+                            "▪️Черга активна впродовж дня здачі\n" +
+                            "▪️З черги можна вийти за допомогою команди /dequeue\n" +
+                            "\uD83C\uDD98 Напиши /help для того, щоб побачити команди.");
+                } else {
+                    sendSimpleMessage(chatId, "Надішли /start щоб почати, інакше буду тебе ігнорувати\uD83D\uDE48");
                 }
             }
         }
     }
 
-    private void sendAvailableQueues(long chatId, String day) {
-        List<Queue> queues = queueDAO.getAllQueues();
+    private void showQueueByScheduleId(long chatId, Participant participant, long operationId) {
+        // TODO
+        sendSimpleMessage(chatId, "queue");
     }
 
-    private void sendSchedule(long chatId, String day) {
+    private void removeParticipantFromQueueByScheduleId(long chatId, Participant participant, long operationId) {
+        // TODO
+        sendSimpleMessage(chatId, "removed from queue");
+    }
+
+    private void addParticipantToQueueByScheduleId(long chatId, Participant participant, long operationId) {
+        // TODO
+        sendSimpleMessage(chatId, "added to queue");
+    }
+
+    private void sendSchedule(long chatId, String day, String operation, Participant participant) {
         List<Schedule> schedules = scheduleDAO.getScheduleList();
-        Map<Long, String> stringSchedules = schedules.stream()
-                .filter(schedule -> schedule.getDate().equalsIgnoreCase(day))
+        Map<Long, String> stringSchedules = filterSchedules(schedules, day);
+        if (stringSchedules.isEmpty()) {
+            sendSimpleMessage(chatId, "Сьогодні немає доступних черг\uD83E\uDD73");
+            participantDAO.updateParticipantOperationStatus(participant.getId(), operation);
+        } else {
+            // TODO send buttons
+            sendSimpleMessage(chatId, stringSchedules.toString());
+            participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
+        }
+    }
+
+    private Map<Long, String> filterSchedules(List<Schedule> schedules, String day) {
+        return schedules.stream()
+                .filter(schedule -> schedule.getDay().equalsIgnoreCase(day))
                 .collect(Collectors.toMap(Schedule::getId, schedule -> {
-                    String time = schedule.getTime().toString();
+                    String time = schedule.getHour().toString();
                     String subject = schedule.getSubject().getName();
                     return time + " - " + subject;
                 }));
-        // TODO send buttons
     }
 
     private void sendHelp(long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
-        List<String> commands = Arrays.stream(Command.values())
-                .filter(Command::getShow)
-                .map(command -> command.getCommand() + " " + command.getHelp())
-                .collect(Collectors.toList());
-        message.setText(commands.toString());
+        String commands = Arrays.stream(Command.values())
+                .filter(Command::isVisible)
+                .map(command -> command.getCommand() + " - " + command.getHelp() + "\n")
+                .collect(Collectors.joining());
+        message.setText(commands);
         try {
             execute(message);
         } catch (TelegramApiException e) {

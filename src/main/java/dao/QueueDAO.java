@@ -22,7 +22,7 @@ public final class QueueDAO {
         return session.load(Queue.class, id);
     }
 
-    public List<Queue> getAllQueues() {
+    public List<Queue> getQueueList() {
         final Query query = session.createQuery("from Queue");
         return (List<Queue>) query.list();
     }

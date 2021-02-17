@@ -11,12 +11,12 @@ public enum Command {
 
     private final String command;
     private final String help;
-    private final boolean show;
+    private final boolean visible;
 
-    Command(String command, String help, boolean show) {
+    Command(String command, String help, boolean visible) {
         this.help = help;
         this.command = command;
-        this.show = show;
+        this.visible = visible;
     }
 
     public String getCommand() {
@@ -27,7 +27,7 @@ public enum Command {
         return help;
     }
 
-    public boolean getShow() {
-        return show;
+    public boolean isVisible() {
+        return visible;
     }
 }

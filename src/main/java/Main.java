@@ -12,6 +12,7 @@ public class Main {
     private static final ConfigurationMapper configurationMapper = new ConfigurationMapper();
     private static final Logger logger = LoggerFactory.getLogger(Logger.class);
 
+    // TODO schedule queue clearing
     public static void main(String[] args) {
         configurationMapper.run();
         try {

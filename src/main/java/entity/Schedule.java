@@ -16,10 +16,10 @@ public class Schedule {
     private Long id;
 
     @Basic
-    private String date;
+    private String day;
 
     @Basic
-    private Time time;
+    private Time hour;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "subject_id", referencedColumnName = "id", nullable = false)
