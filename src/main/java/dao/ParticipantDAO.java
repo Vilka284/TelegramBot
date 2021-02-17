@@ -1,6 +1,5 @@
 package dao;
 
-import com.github.fluent.hibernate.transformer.FluentHibernateResultTransformer;
 import entity.Participant;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -35,9 +34,7 @@ public final class ParticipantDAO {
 
     public List<Participant> getAllParticipants() {
         final Query query = session.createQuery("from Participant");
-        return (List<Participant>) query
-                .setResultTransformer(new FluentHibernateResultTransformer(Participant.class))
-                .list();
+        return (List<Participant>) query.list();
     }
 
     public void removeParticipant(long id) {

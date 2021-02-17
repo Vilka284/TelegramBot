@@ -1,9 +1,6 @@
 package dao;
 
-import com.github.fluent.hibernate.transformer.FluentHibernateResultTransformer;
-import entity.Participant;
 import entity.Schedule;
-import entity.Subject;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import util.HibernateUtil;
@@ -25,15 +22,13 @@ public final class ScheduleDAO {
     }
 
     public Schedule getScheduleBySubjectId(long subjectId) {
-        final Query query = session.createQuery("from Schedule s where s.subject.id = " + subjectId);
+        final Query query = session.createQuery("from Schedule s where s.subject.id = '" + subjectId + "'");
         return (Schedule) query.uniqueResult();
     }
 
     public List<Schedule> getScheduleList() {
         final Query query = session.createQuery("from Schedule");
-        return (List<Schedule>) query
-                .setResultTransformer(new FluentHibernateResultTransformer(Schedule.class))
-                .list();
+        return (List<Schedule>) query.list();
     }
 
     public void addSchedule(Schedule schedule) {

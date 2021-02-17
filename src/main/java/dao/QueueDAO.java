@@ -1,6 +1,5 @@
 package dao;
 
-import com.github.fluent.hibernate.transformer.FluentHibernateResultTransformer;
 import entity.Queue;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -23,18 +22,9 @@ public final class QueueDAO {
         return session.load(Queue.class, id);
     }
 
-    public List<Queue> getQueueByScheduleId(long scheduleId) {
-        final Query query = session.createQuery("from Queue q where q.schedule.id = " + scheduleId);
-        return (List<Queue>) query
-                .setResultTransformer(new FluentHibernateResultTransformer(Queue.class))
-                .list();
-    }
-
-    public List<Queue> getQueueByDay(String day) {
-        final Query query = session.createQuery("from Queue q where q.schedule.date = " + day);
-        return (List<Queue>) query
-                .setResultTransformer(new FluentHibernateResultTransformer(Queue.class))
-                .list();
+    public List<Queue> getAllQueues() {
+        final Query query = session.createQuery("from Queue");
+        return (List<Queue>) query.list();
     }
 
     public void addToQueue(Queue queue) {
@@ -60,7 +50,8 @@ public final class QueueDAO {
 
     public void clearQueue() {
         final Transaction transaction = session.beginTransaction();
-        session.clear();
+        final Query query = session.createQuery("delete from Queue");
+        query.executeUpdate();
         transaction.commit();
     }
 }

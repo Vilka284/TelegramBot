@@ -1,6 +1,5 @@
 package dao;
 
-import com.github.fluent.hibernate.transformer.FluentHibernateResultTransformer;
 import entity.Subject;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -31,8 +30,6 @@ public final class SubjectDAO {
 
     public List<Subject> getAllSubjects() {
         final Query query = session.createQuery("from Subject");
-        return (List<Subject>) query
-                .setResultTransformer(new FluentHibernateResultTransformer(Subject.class))
-                .list();
+        return (List<Subject>) query.list();
     }
 }

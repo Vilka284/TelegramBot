@@ -7,7 +7,10 @@ import dao.QueueDAO;
 import dao.ScheduleDAO;
 import dao.SubjectDAO;
 import entity.Participant;
+import entity.Queue;
+import entity.Schedule;
 import enumeration.Command;
+import enumeration.Day;
 import org.hibernate.ObjectNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +20,9 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Bot extends TelegramLongPollingBot {
@@ -50,6 +55,7 @@ public class Bot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String message = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
+            String day = getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
 
             // check operations
             try {
@@ -77,13 +83,13 @@ public class Bot extends TelegramLongPollingBot {
                 if (message.equals(Command.START.getCommand())) {
                     sendSimpleMessage(chatId, "Ти вже є учасником.");
                 } else if (message.equals(Command.WATCH.getCommand())) {
-                    // TODO get schedule
+                    sendSchedule(chatId, day);
                     participant.setOperation(Command.WATCH.getCommand());
                 } else if (message.equals(Command.QUEUE.getCommand())) {
-                    // TODO show schedule to participant
+                    sendAvailableQueues(chatId, day);
                     participant.setOperation(Command.QUEUE.getCommand());
                 } else if (message.equals(Command.DEQUEUE.getCommand())) {
-                    // TODO show schedule to participant
+                    sendAvailableQueues(chatId, day);
                     participant.setOperation(Command.DEQUEUE.getCommand());
                 } else if (message.equals(Command.HELP.getCommand())) {
                     sendHelp(chatId);
@@ -103,6 +109,22 @@ public class Bot extends TelegramLongPollingBot {
                 }
             }
         }
+    }
+
+    private void sendAvailableQueues(long chatId, String day) {
+        List<Queue> queues = queueDAO.getAllQueues();
+    }
+
+    private void sendSchedule(long chatId, String day) {
+        List<Schedule> schedules = scheduleDAO.getScheduleList();
+        Map<Long, String> stringSchedules = schedules.stream()
+                .filter(schedule -> schedule.getDate().equalsIgnoreCase(day))
+                .collect(Collectors.toMap(Schedule::getId, schedule -> {
+                    String time = schedule.getTime().toString();
+                    String subject = schedule.getSubject().getName();
+                    return time + " - " + subject;
+                }));
+        // TODO send buttons
     }
 
     private void sendHelp(long chatId) {
@@ -129,6 +151,13 @@ public class Bot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             logger.error(e.getMessage(), e);
         }
+    }
+
+    public Day getDayById(int id) {
+        return Arrays.stream(Day.values())
+                .filter(day -> day.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No such day exists"));
     }
 
     @Override
