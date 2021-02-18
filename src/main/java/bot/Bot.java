@@ -55,6 +55,7 @@ public class Bot extends TelegramLongPollingBot {
             String message = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
             String day = getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
+            boolean numberOperationComplete = false;
 
             // check operations
             try {
@@ -66,14 +67,15 @@ public class Bot extends TelegramLongPollingBot {
                     if (operation.equals(Command.QUEUE.getCommand())) {
                         // TODO queue participant in selected schedule
                         addParticipantToQueueByScheduleId(chatId, participant, operationId);
+                        numberOperationComplete = true;
                     } else if (operation.equals(Command.DEQUEUE.getCommand())) {
                         // TODO dequeue participant in selected schedule
                         removeParticipantFromQueueByScheduleId(chatId, participant, operationId);
+                        numberOperationComplete = true;
                     } else if (operation.equals(Command.WATCH.getCommand())) {
                         // TODO show participant selected queue
                         showQueueByScheduleId(chatId, participant, operationId);
-                    } else {
-                        sendHelp(chatId);
+                        numberOperationComplete = true;
                     }
                     participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                 }
@@ -87,14 +89,14 @@ public class Bot extends TelegramLongPollingBot {
                 if (message.equals(Command.START.getCommand())) {
                     sendSimpleMessage(chatId, "Ти вже є учасником.");
                 } else if (message.equals(Command.WATCH.getCommand())) {
-                    sendSchedule(chatId, day, Command.WATCH.getCommand(), participant);
+                    sendSchedule(chatId, day, Command.WATCH.getCommand(), participant, "Доступні черги для перегляду\uD83E\uDDD0");
                 } else if (message.equals(Command.QUEUE.getCommand())) {
-                    sendSchedule(chatId, day, Command.QUEUE.getCommand(), participant);
+                    sendSchedule(chatId, day, Command.QUEUE.getCommand(), participant, "Обери чергу в яку хочеш записатись✍");
                 } else if (message.equals(Command.DEQUEUE.getCommand())) {
-                    sendSchedule(chatId, day, Command.DEQUEUE.getCommand(), participant);
+                    sendSchedule(chatId, day, Command.DEQUEUE.getCommand(), participant, "Обери чергу з якої хочеш вийти✖");
                 } else if (message.equals(Command.HELP.getCommand())) {
                     sendHelp(chatId);
-                } else {
+                } else if (!numberOperationComplete) {
                     sendSimpleMessage(chatId, "Я тебе не розумію, скористайся командою /help");
                 }
             } else {
@@ -132,16 +134,16 @@ public class Bot extends TelegramLongPollingBot {
         sendSimpleMessage(chatId, "added to queue");
     }
 
-    private void sendSchedule(long chatId, String day, String operation, Participant participant) {
+    private void sendSchedule(long chatId, String day, String operation, Participant participant, String message) {
         List<Schedule> schedules = scheduleDAO.getScheduleList();
         Map<Long, String> stringSchedules = filterSchedules(schedules, day);
         if (stringSchedules.isEmpty()) {
             sendSimpleMessage(chatId, "Сьогодні немає доступних черг\uD83E\uDD73");
-            participantDAO.updateParticipantOperationStatus(participant.getId(), operation);
+            participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
         } else {
             // TODO send buttons
-            sendSimpleMessage(chatId, stringSchedules.toString());
-            participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
+            sendSimpleMessage(chatId, message + "\n" + stringSchedules.toString());
+            participantDAO.updateParticipantOperationStatus(participant.getId(), operation);
         }
     }
 

@@ -34,6 +34,11 @@ public final class ParticipantDAO {
         return (Participant) query.uniqueResult();
     }
 
+    public Participant getParticipantByChatId(String tag) {
+        final Query query = session.createQuery("from Participant where tag = '" + tag + "'");
+        return (Participant) query.uniqueResult();
+    }
+
     public List<Participant> getAllParticipants() {
         final Query query = session.createQuery("from Participant");
         return (List<Participant>) query.list();
