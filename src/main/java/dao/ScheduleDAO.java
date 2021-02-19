@@ -21,6 +21,11 @@ public final class ScheduleDAO {
         return session.load(Schedule.class, id);
     }
 
+    public Schedule getScheduleByIdAndDay(long id, String day) {
+        final Query query = session.createQuery("from Schedule s where s.id = " + id + " and s.day = '" + day + "'");
+        return (Schedule) query.uniqueResult();
+    }
+
     public Schedule getScheduleBySubjectId(long subjectId) {
         final Query query = session.createQuery("from Schedule s where s.subject.id = '" + subjectId + "'");
         return (Schedule) query.uniqueResult();

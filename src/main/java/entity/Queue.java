@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.Date;
 
 @Entity(name = "Queue")
 @Table(name = "queue")
@@ -16,7 +17,7 @@ public class Queue {
     private Long id;
 
     @Basic
-    private Timestamp enter_date;
+    private Date enter_date;
 
     @Basic
     private String status;

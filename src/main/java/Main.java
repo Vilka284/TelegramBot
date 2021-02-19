@@ -1,5 +1,4 @@
 import bot.Bot;
-import config.ConfigurationHolder;
 import config.ConfigurationMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -7,9 +7,11 @@ import dao.QueueDAO;
 import dao.ScheduleDAO;
 import dao.SubjectDAO;
 import entity.Participant;
+import entity.Queue;
 import entity.Schedule;
 import enumeration.Command;
 import enumeration.Day;
+import enumeration.Status;
 import org.hibernate.ObjectNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,10 +20,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Bot extends TelegramLongPollingBot {
@@ -65,16 +64,13 @@ public class Bot extends TelegramLongPollingBot {
                 if (participant != null) {
                     String operation = participant.getOperation();
                     if (operation.equals(Command.QUEUE.getCommand())) {
-                        // TODO queue participant in selected schedule
-                        addParticipantToQueueByScheduleId(chatId, participant, operationId);
+                        addParticipantToQueueByScheduleId(chatId, operationId, participant, day);
                         numberOperationComplete = true;
                     } else if (operation.equals(Command.DEQUEUE.getCommand())) {
-                        // TODO dequeue participant in selected schedule
-                        removeParticipantFromQueueByScheduleId(chatId, participant, operationId);
+                        removeParticipantFromQueueByScheduleId(chatId, operationId, participant, day);
                         numberOperationComplete = true;
                     } else if (operation.equals(Command.WATCH.getCommand())) {
-                        // TODO show participant selected queue
-                        showQueueByScheduleId(chatId, participant, operationId);
+                        showQueueByScheduleId(chatId, operationId, day);
                         numberOperationComplete = true;
                     }
                     participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
@@ -119,19 +115,70 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    private void showQueueByScheduleId(long chatId, Participant participant, long operationId) {
-        // TODO
-        sendSimpleMessage(chatId, "queue");
+    private void showQueueByScheduleId(long chatId, long operationId, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+        if (schedule != null) {
+            List<Queue> queueList = queueDAO.getQueueList();
+            if (!queueList.isEmpty()) {
+                Map<Long, String> queueParticipants = queueList.stream()
+                        .filter(queue -> queue.getSchedule().getId() == operationId)
+                        .collect(Collectors.toMap(Queue::getId, part -> part.getParticipant().getTag() + " " + part.getStatus()));
+                sendSimpleMessage(chatId, queueParticipants.toString());
+            } else {
+                sendSimpleMessage(chatId, "В цій черзі немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
+            }
+        } else {
+            sendSimpleMessage(chatId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
+        }
     }
 
-    private void removeParticipantFromQueueByScheduleId(long chatId, Participant participant, long operationId) {
-        // TODO
-        sendSimpleMessage(chatId, "removed from queue");
+    private void removeParticipantFromQueueByScheduleId(long chatId, long operationId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+        if (schedule != null) {
+            // find all queues
+            List<Queue> queueList = queueDAO.getQueueList();
+            if (queueList != null) {
+                // filter queue by schedule
+                List<Queue> queueParticipants = queueList.stream()
+                        .filter(queue -> queue.getSchedule().getId() == operationId)
+                        .collect(Collectors.toList());
+                if (!queueParticipants.isEmpty()) {
+                    try {
+                        // filter participant if participant in queue and not removed from this queue
+                        Queue queueToRemove = queueParticipants.stream()
+                                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())
+                                        && !queue.getStatus().equals(Status.DEQUEUE.getStatus()))
+                                .collect(Collectors.toList())
+                                .get(0);
+                        queueDAO.changeParticipantStatus(queueToRemove.getId(), Status.DEQUEUE.getStatus());
+                        sendSimpleMessage(chatId, "Я видалив тебе з цієї черги\uD83D\uDC4D");
+                    } catch (NullPointerException e) {
+                        sendSimpleMessage(chatId, "Тебе немає в цій черзі");
+                    }
+                } else {
+                    sendSimpleMessage(chatId, "Ця черга порожня\uD83D\uDEAB");
+                }
+            } else {
+                sendSimpleMessage(chatId, "Ця черга порожня\uD83D\uDEAB");
+            }
+        } else {
+            sendSimpleMessage(chatId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
+        }
     }
 
-    private void addParticipantToQueueByScheduleId(long chatId, Participant participant, long operationId) {
-        // TODO
-        sendSimpleMessage(chatId, "added to queue");
+    private void addParticipantToQueueByScheduleId(long chatId, long operationId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+        if (schedule != null) {
+            Queue queue = new Queue();
+            queue.setParticipant(participant);
+            queue.setSchedule(schedule);
+            queue.setStatus(Status.QUEUE.getStatus() + Status.QUEUE.getEmoji());
+            queue.setEnter_date(new Date());
+            queueDAO.addToQueue(queue);
+            sendSimpleMessage(chatId, "Я успішно додав тебе до черги " + schedule.getSubject().getName() + "\uD83D\uDC4C");
+        } else {
+            sendSimpleMessage(chatId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
+        }
     }
 
     private void sendSchedule(long chatId, String day, String operation, Participant participant, String message) {
