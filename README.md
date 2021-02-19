@@ -9,6 +9,7 @@ This is a simple queue bot. Here are some basic logic:
 Feel free to contribute. Here are the list of possible improvments:
 - Different subgroups of participants
 - Display status of each participant (complete lab, uncomplete lab, left queue etc)
+- Open queue 30 minutes before lab start
 
 ## Setup and run
 When you clone this project download all of the dependencies listed in [pom.xml](pom.xml). 
