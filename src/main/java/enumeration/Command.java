@@ -2,7 +2,7 @@ package enumeration;
 
 public enum Command {
 
-    START("/start", "Почни роботу зі мною цією командою\n", true),
+    START("/start", "Почни роботу зі мною цією командою\n", false),
     WATCH("/watch", "Дивитись чергу\n", true),
     QUEUE("/queue", "Записатись в чергу\n", true),
     DEQUEUE("/dequeue", "Вийти з черги", true),

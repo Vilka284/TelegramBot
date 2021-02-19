@@ -18,7 +18,7 @@ import java.util.Properties;
 
 public class HibernateUtil {
 
-    public static final ThreadLocal<Session> session = new ThreadLocal<Session>();
+    public static final ThreadLocal<Session> session = new ThreadLocal<>();
     private static final SessionFactory sessionFactory;
 
     static {
