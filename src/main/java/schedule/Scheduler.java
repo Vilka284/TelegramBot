@@ -1,6 +1,9 @@
 package schedule;
 
-import org.quartz.*;
+import org.quartz.JobDetail;
+import org.quartz.SchedulerException;
+import org.quartz.SchedulerFactory;
+import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

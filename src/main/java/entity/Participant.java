@@ -18,6 +18,9 @@ public class Participant {
     private String tag;
 
     @Basic
+    private String name;
+
+    @Basic
     @Column(name = "chat_id")
     private Long chatId;
 

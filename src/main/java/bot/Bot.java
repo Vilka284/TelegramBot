@@ -19,6 +19,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -81,7 +82,9 @@ public class Bot extends TelegramLongPollingBot {
             } else {
                 if (message.equals(Command.START.getCommand())) {
                     Participant newParticipant = new Participant();
-                    newParticipant.setTag(update.getMessage().getFrom().getUserName());
+                    User from = update.getMessage().getFrom();
+                    newParticipant.setTag(from.getUserName());
+                    newParticipant.setName(from.getFirstName());
                     newParticipant.setChatId(chatId);
                     newParticipant.setOperation(Command.NONE.getCommand());
                     participantDAO.addParticipant(newParticipant);
@@ -123,17 +126,33 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    // TODO sort queue
     private void showQueueByScheduleId(long chatId, long messageId, long operationId, String day) {
         Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
         if (schedule != null) {
             List<Queue> queueList = queueDAO.getQueueList();
             if (!queueList.isEmpty()) {
-                Map<Long, String> queueParticipants = queueList.stream()
-                        .filter(queue -> queue.getSchedule().getId() == operationId)
-                        .collect(Collectors.toMap(Queue::getId, part -> part.getParticipant().getTag() + " " + part.getStatus()));
-                // TODO beautify queue
-                answerCallback(chatId, messageId, queueParticipants.toString());
+                // sort queue by participants enter date
+                Comparator<Queue> compareByEnterDate = (q1, q2) ->
+                        Long.valueOf(q1.getEnter_date().getTime()).compareTo(q2.getEnter_date().getTime());
+                queueList.sort(compareByEnterDate);
+
+                List<String> queueParticipants = queueList.stream()
+                        .filter(queue -> queue.getSchedule().getId() == operationId) // filter by required schedule
+                        .map(part -> {
+                            String tag = part.getParticipant().getTag();
+                            return (tag != null ? tag : part.getParticipant().getName()) + " " + part.getStatus();
+                        }) // map participant to string
+                        .collect(Collectors.toList());
+
+                if (!queueParticipants.isEmpty()) {
+                    StringBuilder queue = new StringBuilder("Черга '" + schedule.getSubject().getName() + "':\n");
+                    for (int i = 0; i < queueParticipants.size(); i++) {
+                        queue.append(i + 1).append(". ").append(queueParticipants.get(i)).append("\n");
+                    }
+                    answerCallback(chatId, messageId, queue.toString());
+                } else {
+                    answerCallback(chatId, messageId, "В цій черзі немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
+                }
             } else {
                 answerCallback(chatId, messageId, "В цій черзі немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
             }
@@ -160,8 +179,9 @@ public class Bot extends TelegramLongPollingBot {
                                         && !queue.getStatus().equals(Status.DEQUEUE.getStatus()))
                                 .collect(Collectors.toList())
                                 .get(0);
-                        queueDAO.changeParticipantStatus(queueToRemove.getId(), Status.DEQUEUE.getStatus());
-                        answerCallback(chatId, messageId, "Я видалив тебе з цієї черги\uD83D\uDC4D");
+                        queueDAO.changeParticipantStatus(queueToRemove.getId(), Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji());
+                        answerCallback(chatId, messageId, "Я видалив тебе з цієї черги\uD83D\uDC4D \n" +
+                                "Щоб записатись у неї знову надішли /queue");
                     } catch (NullPointerException e) {
                         answerCallback(chatId, messageId, "Тебе немає в цій черзі");
                     }
@@ -179,14 +199,26 @@ public class Bot extends TelegramLongPollingBot {
     private void addParticipantToQueueByScheduleId(long chatId, long messageId, long operationId, Participant participant, String day) {
         Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
         if (schedule != null) {
-            // TODO if participant already in queue change status to active
-            Queue queue = new Queue();
-            queue.setParticipant(participant);
-            queue.setSchedule(schedule);
-            queue.setStatus(Status.QUEUE.getStatus() + Status.QUEUE.getEmoji());
-            queue.setEnter_date(new Date());
-            queueDAO.addToQueue(queue);
-            answerCallback(chatId, messageId, "Я успішно додав тебе до черги " + schedule.getSubject().getName() + "\uD83D\uDC4C");
+            List<Queue> queueList = queueDAO.getQueueList().stream()
+                    .filter(queue -> queue.getSchedule().getId() == operationId) // filter queue by schedule
+                    .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())) // filter by participant
+                    .collect(Collectors.toList());
+
+            // if participant didn't enter queue add to queue
+            // else change status
+            if (queueList.isEmpty()) {
+                Queue queue = new Queue();
+                queue.setParticipant(participant);
+                queue.setSchedule(schedule);
+                queue.setStatus(Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji());
+                queue.setEnter_date(new Date());
+                queueDAO.addToQueue(queue);
+                answerCallback(chatId, messageId, "Я успішно додав тебе до черги " + schedule.getSubject().getName() + "\uD83D\uDC4C \n" +
+                        "Щоб вийти з неї надішли /dequeue");
+            } else {
+                Queue queue = queueList.get(0);
+                queueDAO.changeParticipantStatus(queue.getId(), Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji());
+            }
         } else {
             answerCallback(chatId, messageId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
         }
@@ -250,7 +282,7 @@ public class Bot extends TelegramLongPollingBot {
         message.setChatId(String.valueOf(chatId));
         String commands = Arrays.stream(Command.values())
                 .filter(Command::isVisible)
-                .map(command -> command.getCommand() + " - " + command.getHelp() + "\n")
+                .map(command -> "▪ " + command.getCommand() + " - " + command.getHelp() + "\n")
                 .collect(Collectors.joining());
         message.setText(commands);
         try {

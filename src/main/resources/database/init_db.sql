@@ -5,9 +5,10 @@ create database queue;
 create table participant
 (
     id        serial primary key,
-    tag       text unique not null,
-    chat_id   int unique  not null,
-    operation text        not null -- last made operation
+    tag       text unique,
+    name      text,
+    chat_id   int unique not null,
+    operation text       not null -- last made operation
 );
 
 create table subject

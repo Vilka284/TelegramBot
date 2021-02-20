@@ -1,7 +1,6 @@
 package dao;
 
 import entity.Participant;
-import entity.Schedule;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
