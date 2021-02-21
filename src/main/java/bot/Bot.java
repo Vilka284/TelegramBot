@@ -143,12 +143,12 @@ public class Bot extends TelegramLongPollingBot {
                         .filter(queue -> queue.getSchedule().getId() == operationId) // filter by required schedule
                         .map(part -> {
                             String tag = part.getParticipant().getTag();
-                            return (tag != null ? tag : part.getParticipant().getName()) + " " + part.getStatus();
+                            return (tag != null ? "@" + tag : part.getParticipant().getName()) + " " + part.getStatus();
                         }) // map participant to string
                         .collect(Collectors.toList());
 
                 if (!queueParticipants.isEmpty()) {
-                    StringBuilder queue = new StringBuilder("Черга '" + schedule.getSubject().getName() + "':\n");
+                    StringBuilder queue = new StringBuilder("Черга '" + schedule.getSubject().getName() + " " + schedule.getHour() + "':\n");
                     for (int i = 0; i < queueParticipants.size(); i++) {
                         queue.append(i + 1).append(". ").append(queueParticipants.get(i)).append("\n");
                     }
@@ -271,7 +271,8 @@ public class Bot extends TelegramLongPollingBot {
                 .collect(Collectors.toMap(Schedule::getId, schedule -> {
                     String time = schedule.getHour().toString();
                     String subject = schedule.getSubject().getName();
-                    return time + " - " + subject;
+                    String teacher = schedule.getSubject().getTeacher();
+                    return time + " - " + subject + "\n" + teacher;
                 }));
     }
 
