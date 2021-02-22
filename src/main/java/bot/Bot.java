@@ -66,6 +66,17 @@ public class Bot extends TelegramLongPollingBot {
             long chatId = update.getMessage().getChatId();
             String day = getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
 
+            // if bot in group
+            if (update.getMessage().getChat().getType().equals("group")
+                    || update.getMessage().getChat().getType().equals("supergroup")) {
+                if (message.equals(Command.WATCH.getCommand())) {
+                    sendSchedule(chatId, day, "Доступні черги для перегляду\uD83E\uDDD0");
+                } else {
+                    sendSimpleMessage(chatId, "Ти не можеш використовувати інші команди в групах");
+                }
+                return;
+            }
+
             // check commands
             Participant participant = participantDAO.getParticipantByChatId(chatId);
             if (participant != null) {
@@ -110,6 +121,14 @@ public class Bot extends TelegramLongPollingBot {
             // check operations
             try {
                 long operationId = Long.parseLong(data);
+
+                // if bot in group
+                if (update.getCallbackQuery().getMessage().getChat().getType().equals("group")
+                        || update.getCallbackQuery().getMessage().getChat().getType().equals("supergroup")) {
+                    showQueueByScheduleId(chatId, messageId, operationId, day);
+                    return;
+                }
+
                 Participant participant = participantDAO.getParticipantByChatId(chatId);
 
                 if (participant != null) {
@@ -250,6 +269,16 @@ public class Bot extends TelegramLongPollingBot {
             }
         } else {
             answerCallback(chatId, messageId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
+        }
+    }
+
+    private void sendSchedule(long chatId, String day, String message) {
+        List<Schedule> schedules = scheduleDAO.getScheduleList();
+        Map<Long, String> stringSchedules = filterSchedules(schedules, day);
+        if (!stringSchedules.isEmpty()) {
+            sendMessageWithInlineButtons(chatId, message, stringSchedules);
+        } else {
+            sendSimpleMessage(chatId, "Сьогодні немає доступних черг\uD83E\uDD73");
         }
     }
 
