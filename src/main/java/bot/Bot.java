@@ -69,11 +69,17 @@ public class Bot extends TelegramLongPollingBot {
             // if bot in group
             if (update.getMessage().getChat().getType().equals("group")
                     || update.getMessage().getChat().getType().equals("supergroup")) {
-                if (message.equals(Command.WATCH.getCommand())) {
+                if (message.equals(Command.WATCH.getCommand())
+                || message.equals(Command.WATCH.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
                     sendSchedule(chatId, day, "Доступні черги для перегляду\uD83E\uDDD0");
                 } else if (message.equals(Command.QUEUE.getCommand())
-                        || message.equals(Command.DEQUEUE.getCommand())) {
+                        || message.equals(Command.QUEUE.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())
+                        || message.equals(Command.DEQUEUE.getCommand())
+                        || message.equals(Command.DEQUEUE.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
                     sendSimpleMessage(chatId, "Давай обговоримо це в приватних повідомленнях\uD83D\uDE09");
+                } else if (message.equals(Command.HELP.getCommand())
+                        || message.equals(Command.HELP.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                    sendHelp(chatId);
                 }
                 return;
             }
@@ -89,6 +95,9 @@ public class Bot extends TelegramLongPollingBot {
                     sendSchedule(chatId, day, Command.QUEUE.getCommand(), participant, "Обери чергу в яку хочеш записатись✍");
                 } else if (message.equals(Command.DEQUEUE.getCommand())) {
                     sendSchedule(chatId, day, Command.DEQUEUE.getCommand(), participant, "Обери чергу з якої хочеш вийти✖");
+                } else if (message.equals(Command.STOP.getCommand())) {
+                    // TODO
+                    sendSimpleMessage(chatId, "Ця команда поки що немає змісту, вона запрацює із розширенням функціоналу :)");
                 } else if (message.equals(Command.HELP.getCommand())) {
                     sendHelp(chatId);
                 } else {

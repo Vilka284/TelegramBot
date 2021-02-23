@@ -6,6 +6,7 @@ public enum Command {
     WATCH("/watch", "Дивитись чергу\n", true),
     QUEUE("/queue", "Записатись в чергу\n", true),
     DEQUEUE("/dequeue", "Вийти з черги", true),
+    STOP("/stop", "Більше не писати тобі", false),
     HELP("/help", "", false),
     NONE("none", "", false);
 
