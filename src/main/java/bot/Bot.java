@@ -71,8 +71,9 @@ public class Bot extends TelegramLongPollingBot {
                     || update.getMessage().getChat().getType().equals("supergroup")) {
                 if (message.equals(Command.WATCH.getCommand())) {
                     sendSchedule(chatId, day, "Доступні черги для перегляду\uD83E\uDDD0");
-                } else {
-                    sendSimpleMessage(chatId, "Ти не можеш використовувати інші команди в групах");
+                } else if (message.equals(Command.QUEUE.getCommand())
+                        || message.equals(Command.DEQUEUE.getCommand())) {
+                    sendSimpleMessage(chatId, "Давай обговоримо це в приватних повідомленнях\uD83D\uDE09");
                 }
                 return;
             }
