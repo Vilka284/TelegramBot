@@ -95,7 +95,7 @@ public class Bot extends TelegramLongPollingBot {
                     String[] operation = participant.getOperation().split(" ");
                     // if participant selected watch as previous command
                     // next command will be executed automatically without additional call
-                    if (operation.length > 0
+                    if (operation.length > 1
                             && operation[0].equals(Command.WATCH.getCommand())) {
                         addParticipantToQueueByScheduleId(chatId, update.getMessage().getMessageId(), Long.parseLong(operation[1]), participant, day);
                         participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
@@ -108,7 +108,7 @@ public class Bot extends TelegramLongPollingBot {
                     String[] operation = participant.getOperation().split(" ");
                     // if participant selected watch as previous command
                     // next command will be executed automatically without additional call
-                    if (operation.length > 0
+                    if (operation.length > 1
                             && operation[0].equals(Command.WATCH.getCommand())) {
                         removeParticipantFromQueueByScheduleId(chatId, update.getMessage().getMessageId(), Long.parseLong(operation[1]), participant, day);
                         participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
@@ -120,8 +120,10 @@ public class Bot extends TelegramLongPollingBot {
                 } else if (message.equals(Command.STOP.getCommand())) {
                     // TODO
                     sendSimpleMessage(chatId, "Ця команда поки що немає змісту, вона запрацює із розширенням функціоналу :)");
+                    participantDAO.updateParticipantOperationStatus(participant.getId(), Command.STOP.getCommand());
                 } else if (message.equals(Command.HELP.getCommand())) {
                     sendHelp(chatId);
+                    participantDAO.updateParticipantOperationStatus(participant.getId(), Command.HELP.getCommand());
                 } else {
                     sendSimpleMessage(chatId, "Я тебе не розумію, скористайся командою /help");
                 }
@@ -412,6 +414,9 @@ public class Bot extends TelegramLongPollingBot {
         List<Schedule> schedules = scheduleDAO.getScheduleList();
         Map<Long, String> stringSchedules = filterSchedules(schedules, day);
         if (!stringSchedules.isEmpty()) {
+            if (operation.equals(Command.WATCH.getCommand())) {
+                message = message + "\nПісля вибору черги для перегляду можеш надіслати мені /queue або /dequeue, і я виконаю відповідну дію одразу\uD83C\uDF1A";
+            }
             sendMessageWithInlineButtons(chatId, message, stringSchedules);
             participantDAO.updateParticipantOperationStatus(participant.getId(), operation);
         } else {
