@@ -415,7 +415,9 @@ public class Bot extends TelegramLongPollingBot {
         Map<Long, String> stringSchedules = filterSchedules(schedules, day);
         if (!stringSchedules.isEmpty()) {
             if (operation.equals(Command.WATCH.getCommand())) {
-                message = message + "\nПісля вибору черги для перегляду можеш надіслати мені /queue або /dequeue, і я виконаю відповідну дію одразу\uD83C\uDF1A";
+                message = message +
+                        "\n➖ ➖ ➖ ➖ ➖ ➖ ➖ ➖ ➖ ➖ ➖ ➖" +
+                        "\nПісля вибору черги для перегляду можеш надіслати мені /queue або /dequeue, і я виконаю відповідну дію одразу\uD83C\uDF1A";
             }
             sendMessageWithInlineButtons(chatId, message, stringSchedules);
             participantDAO.updateParticipantOperationStatus(participant.getId(), operation);
