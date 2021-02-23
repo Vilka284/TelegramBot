@@ -8,7 +8,7 @@ connection:
 
 telegram:
   bot:
-    username: @politeh_queue_bot
+    username: politeh_queue_bot
     token: token
   owner:
     name: Andrii

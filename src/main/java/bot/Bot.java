@@ -70,15 +70,15 @@ public class Bot extends TelegramLongPollingBot {
             if (update.getMessage().getChat().getType().equals("group")
                     || update.getMessage().getChat().getType().equals("supergroup")) {
                 if (message.equals(Command.WATCH.getCommand())
-                || message.equals(Command.WATCH.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                || message.equals(Command.WATCH.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
                     sendSchedule(chatId, day, "Доступні черги для перегляду\uD83E\uDDD0");
                 } else if (message.equals(Command.QUEUE.getCommand())
-                        || message.equals(Command.QUEUE.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())
+                        || message.equals(Command.QUEUE.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())
                         || message.equals(Command.DEQUEUE.getCommand())
-                        || message.equals(Command.DEQUEUE.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                        || message.equals(Command.DEQUEUE.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
                     sendSimpleMessage(chatId, "Давай обговоримо це в приватних повідомленнях\uD83D\uDE09");
                 } else if (message.equals(Command.HELP.getCommand())
-                        || message.equals(Command.HELP.getCommand() + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                        || message.equals(Command.HELP.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
                     sendHelp(chatId);
                 }
                 return;
