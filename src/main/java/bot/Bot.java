@@ -227,8 +227,8 @@ public class Bot extends TelegramLongPollingBot {
                         queueDAO.changeParticipantStatus(queueToRemove.getId(), Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji());
                         answerCallback(chatId, messageId, "Я видалив тебе з цієї черги\uD83D\uDC4D \n" +
                                 "Щоб записатись у неї знову надішли /queue");
-                    } catch (NullPointerException e) {
-                        answerCallback(chatId, messageId, "Тебе немає в цій черзі");
+                    } catch (IndexOutOfBoundsException e) {
+                        answerCallback(chatId, messageId, "Тебе немає в цій черзі\uD83D\uDE44");
                     }
                 } else {
                     answerCallback(chatId, messageId, "Ця черга порожня\uD83D\uDEAB");
