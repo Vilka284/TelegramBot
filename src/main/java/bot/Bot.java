@@ -70,7 +70,7 @@ public class Bot extends TelegramLongPollingBot {
             if (update.getMessage().getChat().getType().equals("group")
                     || update.getMessage().getChat().getType().equals("supergroup")) {
                 if (message.equals(Command.WATCH.getCommand())
-                || message.equals(Command.WATCH.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                        || message.equals(Command.WATCH.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
                     sendSchedule(chatId, day, "Доступні черги для перегляду\uD83E\uDDD0");
                 } else if (message.equals(Command.QUEUE.getCommand())
                         || message.equals(Command.QUEUE.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())
@@ -92,8 +92,30 @@ public class Bot extends TelegramLongPollingBot {
                 } else if (message.equals(Command.WATCH.getCommand())) {
                     sendSchedule(chatId, day, Command.WATCH.getCommand(), participant, "Доступні черги для перегляду\uD83E\uDDD0");
                 } else if (message.equals(Command.QUEUE.getCommand())) {
+                    String[] operation = participant.getOperation().split(" ");
+                    // if participant selected watch as previous command
+                    // next command will be executed automatically without additional call
+                    if (operation.length > 0
+                            && operation[0].equals(Command.WATCH.getCommand())) {
+                        addParticipantToQueueByScheduleId(chatId, update.getMessage().getMessageId(), Long.parseLong(operation[1]), participant, day);
+                        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
+                        return;
+                    }
+
+                    // standard command call
                     sendSchedule(chatId, day, Command.QUEUE.getCommand(), participant, "Обери чергу в яку хочеш записатись✍");
                 } else if (message.equals(Command.DEQUEUE.getCommand())) {
+                    String[] operation = participant.getOperation().split(" ");
+                    // if participant selected watch as previous command
+                    // next command will be executed automatically without additional call
+                    if (operation.length > 0
+                            && operation[0].equals(Command.WATCH.getCommand())) {
+                        removeParticipantFromQueueByScheduleId(chatId, update.getMessage().getMessageId(), Long.parseLong(operation[1]), participant, day);
+                        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
+                        return;
+                    }
+
+                    // standard command call
                     sendSchedule(chatId, day, Command.DEQUEUE.getCommand(), participant, "Обери чергу з якої хочеш вийти✖");
                 } else if (message.equals(Command.STOP.getCommand())) {
                     // TODO
@@ -135,7 +157,7 @@ public class Bot extends TelegramLongPollingBot {
                 // if bot in group
                 if (update.getCallbackQuery().getMessage().getChat().getType().equals("group")
                         || update.getCallbackQuery().getMessage().getChat().getType().equals("supergroup")) {
-                    showQueueByScheduleId(chatId, messageId, operationId, day);
+                    showQueueByScheduleIdCallback(chatId, messageId, operationId, day);
                     return;
                 }
 
@@ -144,13 +166,14 @@ public class Bot extends TelegramLongPollingBot {
                 if (participant != null) {
                     String operation = participant.getOperation();
                     if (operation.equals(Command.QUEUE.getCommand())) {
-                        addParticipantToQueueByScheduleId(chatId, messageId, operationId, participant, day);
+                        addParticipantToQueueByScheduleIdCallback(chatId, messageId, operationId, participant, day);
+                        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                     } else if (operation.equals(Command.DEQUEUE.getCommand())) {
-                        removeParticipantFromQueueByScheduleId(chatId, messageId, operationId, participant, day);
+                        removeParticipantFromQueueByScheduleIdCallback(chatId, messageId, operationId, participant, day);
+                        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                     } else if (operation.equals(Command.WATCH.getCommand())) {
-                        showQueueByScheduleId(chatId, messageId, operationId, day);
+                        showQueueByScheduleIdCallback(chatId, messageId, operationId, day);
                     }
-                    participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                 }
             } catch (NumberFormatException | ObjectNotFoundException e) {
                 logger.debug(e.getMessage());
@@ -158,7 +181,7 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    private void showQueueByScheduleId(long chatId, long messageId, long operationId, String day) {
+    private void showQueueByScheduleIdCallback(long chatId, long messageId, long operationId, String day) {
         Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
         if (schedule != null) {
             List<Queue> queueList = queueDAO.getQueueList();
@@ -175,6 +198,10 @@ public class Bot extends TelegramLongPollingBot {
                             return (tag != null ? "@" + tag : part.getParticipant().getName()) + " " + part.getStatus();
                         }) // map participant to string
                         .collect(Collectors.toList());
+
+                // set participant operation status to watch + id of schedule
+                Participant participant = participantDAO.getParticipantByChatId(chatId);
+                participantDAO.updateParticipantOperationStatus(participant.getId(), Command.WATCH.getCommand() + " " + schedule.getId());
 
                 if (!queueParticipants.isEmpty()) {
                     StringBuilder queue = new StringBuilder("Черга '" + schedule.getSubject().getName() + " " + schedule.getHour() + "':\n");
@@ -193,7 +220,7 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    private void removeParticipantFromQueueByScheduleId(long chatId, long messageId, long operationId, Participant participant, String day) {
+    private void removeParticipantFromQueueByScheduleIdCallback(long chatId, long messageId, long operationId, Participant participant, String day) {
         Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
         if (schedule != null) {
 
@@ -213,11 +240,7 @@ public class Bot extends TelegramLongPollingBot {
                 if (!queueParticipants.isEmpty()) {
                     try {
                         // filter participant if participant in queue and not removed from this queue
-                        Queue queueToRemove = queueParticipants.stream()
-                                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())
-                                        && !queue.getStatus().equals(Status.DEQUEUE.getStatus()))
-                                .collect(Collectors.toList())
-                                .get(0);
+                        Queue queueToRemove = filterParticipantToRemove(participant, queueParticipants);
 
                         if (queueToRemove.getStatus().equals(Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji())) {
                             answerCallback(chatId, messageId, "Ти не береш участь в черзі '" + schedule.getSubject().getName() + "'");
@@ -241,7 +264,7 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    private void addParticipantToQueueByScheduleId(long chatId, long messageId, long operationId, Participant participant, String day) {
+    private void addParticipantToQueueByScheduleIdCallback(long chatId, long messageId, long operationId, Participant participant, String day) {
         Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
         if (schedule != null) {
 
@@ -251,20 +274,12 @@ public class Bot extends TelegramLongPollingBot {
                 return;
             }
 
-            List<Queue> queueList = queueDAO.getQueueList().stream()
-                    .filter(queue -> queue.getSchedule().getId() == operationId) // filter queue by schedule
-                    .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())) // filter by participant
-                    .collect(Collectors.toList());
+            List<Queue> queueList = filterQueue(operationId, participant);
 
             // if participant didn't enter queue add to queue
             // else change status
             if (queueList.isEmpty()) {
-                Queue queue = new Queue();
-                queue.setParticipant(participant);
-                queue.setSchedule(schedule);
-                queue.setStatus(Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji());
-                queue.setEnter_date(new Date());
-                queueDAO.addToQueue(queue);
+                createQueueEntity(participant, schedule);
                 answerCallback(chatId, messageId, "Я успішно додав тебе до черги " + schedule.getSubject().getName() + "\uD83D\uDC4C \n" +
                         "Щоб вийти з неї надішли /dequeue");
             } else {
@@ -280,6 +295,107 @@ public class Bot extends TelegramLongPollingBot {
         } else {
             answerCallback(chatId, messageId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
         }
+    }
+
+    private void removeParticipantFromQueueByScheduleId(long chatId, long messageId, long operationId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+        if (schedule != null) {
+
+            // check if queue are ready to be opened
+            if (openToQueue(schedule)) {
+                sendSimpleMessage(chatId, "Доступ до цієї черги закритий. Черга відкривається о " + new Time(schedule.getHour().getTime() - openTimeInMilliseconds));
+                return;
+            }
+
+            // find all queues
+            List<Queue> queueList = queueDAO.getQueueList();
+            if (queueList != null) {
+                // filter queue by schedule
+                List<Queue> queueParticipants = queueList.stream()
+                        .filter(queue -> queue.getSchedule().getId() == operationId)
+                        .collect(Collectors.toList());
+                if (!queueParticipants.isEmpty()) {
+                    try {
+                        // filter participant if participant in queue and not removed from this queue
+                        Queue queueToRemove = filterParticipantToRemove(participant, queueParticipants);
+
+                        if (queueToRemove.getStatus().equals(Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji())) {
+                            sendSimpleMessage(chatId, "Ти не береш участь в черзі '" + schedule.getSubject().getName() + "'");
+                            return;
+                        }
+
+                        queueDAO.changeParticipantStatus(queueToRemove.getId(), Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji());
+                        sendSimpleMessage(chatId, "Я видалив тебе з цієї черги\uD83D\uDC4D \n" +
+                                "Щоб записатись у неї знову надішли /queue");
+                    } catch (IndexOutOfBoundsException e) {
+                        sendSimpleMessage(chatId, "Тебе немає в цій черзі\uD83D\uDE44");
+                    }
+                } else {
+                    sendSimpleMessage(chatId, "Ця черга порожня\uD83D\uDEAB");
+                }
+            } else {
+                sendSimpleMessage(chatId, "Ця черга порожня\uD83D\uDEAB");
+            }
+        } else {
+            sendSimpleMessage(chatId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
+        }
+    }
+
+    private Queue filterParticipantToRemove(Participant participant, List<Queue> queueParticipants) {
+        return queueParticipants.stream()
+                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())
+                        && !queue.getStatus().equals(Status.DEQUEUE.getStatus()))
+                .collect(Collectors.toList())
+                .get(0);
+    }
+
+    private void addParticipantToQueueByScheduleId(long chatId, long messageId, long operationId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+        if (schedule != null) {
+
+            // check if queue are ready to be opened
+            if (openToQueue(schedule)) {
+                sendSimpleMessage(chatId, "Доступ до цієї черги закритий. Черга відкривається о " + new Time(schedule.getHour().getTime() - openTimeInMilliseconds));
+                return;
+            }
+
+            List<Queue> queueList = filterQueue(operationId, participant);
+
+            // if participant didn't enter queue add to queue
+            // else change status
+            if (queueList.isEmpty()) {
+                createQueueEntity(participant, schedule);
+                sendSimpleMessage(chatId, "Я успішно додав тебе до черги " + schedule.getSubject().getName() + "\uD83D\uDC4C \n" +
+                        "Щоб вийти з неї надішли /dequeue");
+            } else {
+                Queue queue = queueList.get(0);
+                // if participant already in queue
+                if (queue.getStatus().equals(Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji())) {
+                    sendSimpleMessage(chatId, "Ти вже є в черзі '" + schedule.getSubject().getName() + "'");
+                    return;
+                }
+                queueDAO.changeParticipantStatus(queue.getId(), Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji());
+                sendSimpleMessage(chatId, "Я відновив тебе в черзі '" + schedule.getSubject().getName() + "'");
+            }
+        } else {
+            sendSimpleMessage(chatId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
+        }
+    }
+
+    private List<Queue> filterQueue(long operationId, Participant participant) {
+        return queueDAO.getQueueList().stream()
+                .filter(queue -> queue.getSchedule().getId() == operationId) // filter queue by schedule
+                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())) // filter by participant
+                .collect(Collectors.toList());
+    }
+
+    private void createQueueEntity(Participant participant, Schedule schedule) {
+        Queue queue = new Queue();
+        queue.setParticipant(participant);
+        queue.setSchedule(schedule);
+        queue.setStatus(Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji());
+        queue.setEnter_date(new Date());
+        queueDAO.addToQueue(queue);
     }
 
     private void sendSchedule(long chatId, String day, String message) {

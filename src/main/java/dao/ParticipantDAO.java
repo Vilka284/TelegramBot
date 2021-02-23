@@ -44,8 +44,12 @@ public final class ParticipantDAO {
     }
 
     public void updateParticipantOperationStatus(long id, String operation) {
+        final Transaction transaction = session.beginTransaction();
         Participant participant = session.load(Participant.class, id);
         participant.setOperation(operation);
+        session.update(participant);
+        session.flush();
+        transaction.commit();
     }
 
     public void removeParticipant(long id) {
