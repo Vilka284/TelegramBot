@@ -1,11 +1,6 @@
 package bot;
 
-import config.Configuration;
 import config.ConfigurationHolder;
-import dao.ParticipantDAO;
-import dao.QueueDAO;
-import dao.ScheduleDAO;
-import dao.SubjectDAO;
 import entity.Participant;
 import entity.Queue;
 import entity.Schedule;
@@ -13,51 +8,14 @@ import enumeration.Command;
 import enumeration.Day;
 import enumeration.Status;
 import org.hibernate.ObjectNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.sql.Time;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.toIntExact;
-
-public class Bot extends TelegramLongPollingBot {
-
-    private final Logger logger = LoggerFactory.getLogger(Logger.class);
-    private final Configuration configuration = ConfigurationHolder.getConfiguration();
-
-    private final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
-    private final QueueDAO queueDAO = QueueDAO.getInstance();
-    private final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
-    private final SubjectDAO subjectDAO = SubjectDAO.getInstance();
-
-    private final int openTimeInMilliseconds = 30 * 60 * 1000; // 30 minutes
-
-    @Override
-    public String getBotUsername() {
-        return configuration.getTelegram().getBot().getUsername();
-    }
-
-    @Override
-    public String getBotToken() {
-        return configuration.getTelegram().getBot().getToken();
-    }
-
-    @Override
-    public void onRegister() {
-
-    }
+public class Bot extends AbstractBot {
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -124,6 +82,11 @@ public class Bot extends TelegramLongPollingBot {
                 } else if (message.equals(Command.HELP.getCommand())) {
                     sendHelp(chatId);
                     participantDAO.updateParticipantOperationStatus(participant.getId(), Command.HELP.getCommand());
+                } else if (message.equals(Command.REMOVE.getCommand()) && isModerator(chatId)) {
+                    sendSchedule(chatId, day, Command.REMOVE.getCommand(), participant, "\uD83D\uDEABОбери чергу з якої ти хочеш видалити учасника\uD83D\uDEAB");
+                } else if (message.equals(Command.BAN.getCommand()) && isModerator(chatId)) {
+                    // TODO
+                    sendSimpleMessage(chatId, "Поки що ти не можеш нікого банити");
                 } else {
                     sendSimpleMessage(chatId, "Я тебе не розумію, скористайся командою /help");
                 }
@@ -175,10 +138,33 @@ public class Bot extends TelegramLongPollingBot {
                         participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                     } else if (operation.equals(Command.WATCH.getCommand())) {
                         showQueueByScheduleIdCallback(chatId, messageId, operationId, day);
+                    } else if (operation.equals(Command.REMOVE.getCommand())) {
+                        // TODO
+                        showQueueParticipantsToRemoveByScheduleIdCallback(chatId, messageId, operationId, day);
                     }
                 }
             } catch (NumberFormatException | ObjectNotFoundException e) {
                 logger.debug(e.getMessage());
+            }
+        }
+    }
+
+    private void showQueueParticipantsToRemoveByScheduleIdCallback(long chatId, long messageId, long operationId, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+        if (schedule != null) {
+            List<Queue> queueList = queueDAO.getQueueList();
+            if (!queueList.isEmpty()) {
+                // sort queue by participants enter date
+                queueList.sort(compareByEnterDate);
+
+                Map<Long, String> queueParticipants = queueList.stream()
+                        .filter(queue -> queue.getSchedule().getId() == operationId) // filter by required schedule
+                        .collect(Collectors.toMap(Queue::getId, part -> {
+                            String tag = part.getParticipant().getTag();
+                            return (tag != null ? "@" + tag : part.getParticipant().getName());
+                        }));
+
+                answerCallbackWithInlineButtons(chatId, messageId, "Обери учасника якого ти хочеш виключити з черги", queueParticipants);
             }
         }
     }
@@ -189,8 +175,6 @@ public class Bot extends TelegramLongPollingBot {
             List<Queue> queueList = queueDAO.getQueueList();
             if (!queueList.isEmpty()) {
                 // sort queue by participants enter date
-                Comparator<Queue> compareByEnterDate = (q1, q2) ->
-                        Long.valueOf(q1.getEnter_date().getTime()).compareTo(q2.getEnter_date().getTime());
                 queueList.sort(compareByEnterDate);
 
                 List<String> queueParticipants = queueList.stream()
@@ -200,10 +184,6 @@ public class Bot extends TelegramLongPollingBot {
                             return (tag != null ? "@" + tag : part.getParticipant().getName()) + " " + part.getStatus();
                         }) // map participant to string
                         .collect(Collectors.toList());
-
-                // set participant operation status to watch + id of schedule
-                Participant participant = participantDAO.getParticipantByChatId(chatId);
-                participantDAO.updateParticipantOperationStatus(participant.getId(), Command.WATCH.getCommand() + " " + schedule.getId());
 
                 if (!queueParticipants.isEmpty()) {
                     StringBuilder queue = new StringBuilder("Черга '" + schedule.getSubject().getName() + " " + schedule.getHour() + "':\n");
@@ -217,8 +197,10 @@ public class Bot extends TelegramLongPollingBot {
             } else {
                 answerCallback(chatId, messageId, "В цій черзі немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
             }
-        } else {
-            answerCallback(chatId, messageId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
+
+            // update participant choice watch + schedule id
+            Participant participant = participantDAO.getParticipantByChatId(chatId);
+            participantDAO.updateParticipantOperationStatus(participant.getId(), Command.WATCH.getCommand() + " " + schedule.getId());
         }
     }
 
@@ -227,7 +209,7 @@ public class Bot extends TelegramLongPollingBot {
         if (schedule != null) {
 
             // check if queue are ready to be opened
-            if (openToQueue(schedule)) {
+            if (isOpenToQueue(schedule)) {
                 answerCallback(chatId, messageId, "Доступ до цієї черги закритий. Черга відкривається о " + new Time(schedule.getHour().getTime() - openTimeInMilliseconds));
                 return;
             }
@@ -271,7 +253,7 @@ public class Bot extends TelegramLongPollingBot {
         if (schedule != null) {
 
             // check if queue are ready to be opened
-            if (openToQueue(schedule)) {
+            if (isOpenToQueue(schedule)) {
                 answerCallback(chatId, messageId, "Доступ до цієї черги закритий. Черга відкривається о " + new Time(schedule.getHour().getTime() - openTimeInMilliseconds));
                 return;
             }
@@ -304,7 +286,7 @@ public class Bot extends TelegramLongPollingBot {
         if (schedule != null) {
 
             // check if queue are ready to be opened
-            if (openToQueue(schedule)) {
+            if (isOpenToQueue(schedule)) {
                 sendSimpleMessage(chatId, "Доступ до цієї черги закритий. Черга відкривається о " + new Time(schedule.getHour().getTime() - openTimeInMilliseconds));
                 return;
             }
@@ -356,7 +338,7 @@ public class Bot extends TelegramLongPollingBot {
         if (schedule != null) {
 
             // check if queue are ready to be opened
-            if (openToQueue(schedule)) {
+            if (isOpenToQueue(schedule)) {
                 sendSimpleMessage(chatId, "Доступ до цієї черги закритий. Черга відкривається о " + new Time(schedule.getHour().getTime() - openTimeInMilliseconds));
                 return;
             }
@@ -445,7 +427,7 @@ public class Bot extends TelegramLongPollingBot {
                 .orElseThrow(() -> new RuntimeException("No such day exists"));
     }
 
-    private boolean openToQueue(Schedule schedule) {
+    private boolean isOpenToQueue(Schedule schedule) {
         long scheduleTime = schedule.getHour().getTime();
         Calendar calendar = Calendar.getInstance();
         calendar.set(1970, Calendar.JANUARY, 1, 0, 0, 0);
@@ -456,103 +438,7 @@ public class Bot extends TelegramLongPollingBot {
         return currentTime < scheduleTime - openTimeInMilliseconds;
     }
 
-    @Override
-    public void onUpdatesReceived(List<Update> updates) {
-        for (Update update : updates) {
-            onUpdateReceived(update);
-        }
-    }
-
-    @Override
-    public void onClosing() {
-        logger.debug("Session is closed");
-    }
-
-    private void sendMessageWithInlineButtons(long chatId, String text, Map<Long, String> stringSchedules) {
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.setChatId(String.valueOf(chatId));
-        sendMessage.setText(text);
-        sendMessage.setReplyMarkup(setInlineButtons(stringSchedules));
-        try {
-            execute(sendMessage);
-        } catch (TelegramApiException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    private void sendHelp(long chatId) {
-        SendMessage message = new SendMessage();
-        message.setChatId(String.valueOf(chatId));
-        String commands = Arrays.stream(Command.values())
-                .filter(Command::isVisible)
-                .map(command -> "▪ " + command.getCommand() + " - " + command.getHelp() + "\n")
-                .collect(Collectors.joining());
-        message.setText(commands);
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    private void sendSimpleMessage(long chatId, String text) {
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.setChatId(String.valueOf(chatId));
-        sendMessage.setText(text);
-        List<String> commands = Arrays.stream(Command.values())
-                .filter(Command::isVisible)
-                .map(Command::getCommand)
-                .collect(Collectors.toList());
-        sendMessage.setReplyMarkup(setReplyButtons(commands));
-        try {
-            execute(sendMessage);
-        } catch (TelegramApiException e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    private ReplyKeyboardMarkup setReplyButtons(List<String> buttons) {
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
-        replyKeyboardMarkup.setSelective(true);
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        replyKeyboardMarkup.setOneTimeKeyboard(false);
-
-        List<KeyboardRow> keyboard = new ArrayList<>();
-
-        for (String button : buttons) {
-            KeyboardRow keyboardRow = new KeyboardRow();
-            keyboardRow.add(button);
-            keyboard.add(keyboardRow);
-        }
-
-        replyKeyboardMarkup.setKeyboard(keyboard);
-        return replyKeyboardMarkup;
-    }
-
-    private InlineKeyboardMarkup setInlineButtons(Map<Long, String> values) {
-        List<List<InlineKeyboardButton>> buttons = new ArrayList<>();
-        values.forEach((key, value) -> {
-            List<InlineKeyboardButton> row = new ArrayList<>();
-            InlineKeyboardButton button = new InlineKeyboardButton();
-            button.setText(value);
-            button.setCallbackData(String.valueOf(key));
-            row.add(button);
-            buttons.add(row);
-        });
-        InlineKeyboardMarkup markupKeyboard = new InlineKeyboardMarkup();
-        markupKeyboard.setKeyboard(buttons);
-        return markupKeyboard;
-    }
-
-    public void answerCallback(long chatId, long messageId, String text) {
-        EditMessageText new_message = new EditMessageText();
-        new_message.setChatId(String.valueOf(chatId));
-        new_message.setMessageId(toIntExact(messageId));
-        new_message.setText(text);
-        try {
-            execute(new_message);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+    private boolean isModerator(long chatId) {
+        return ConfigurationHolder.getConfiguration().getTelegram().getModerators().contains(chatId);
     }
 }
