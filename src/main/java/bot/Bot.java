@@ -1,6 +1,5 @@
 package bot;
 
-import config.ConfigurationHolder;
 import entity.Participant;
 import entity.Queue;
 import entity.Schedule;
@@ -28,15 +27,15 @@ public class Bot extends AbstractBot {
             if (update.getMessage().getChat().getType().equals("group")
                     || update.getMessage().getChat().getType().equals("supergroup")) {
                 if (message.equals(Command.WATCH.getCommand())
-                        || message.equals(Command.WATCH.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                        || message.equals(Command.WATCH.getCommand() + "@" + getBotUsername())) {
                     sendSchedule(chatId, day, "Доступні черги для перегляду\uD83E\uDDD0");
                 } else if (message.equals(Command.QUEUE.getCommand())
-                        || message.equals(Command.QUEUE.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())
+                        || message.equals(Command.QUEUE.getCommand() + "@" + getBotUsername())
                         || message.equals(Command.DEQUEUE.getCommand())
-                        || message.equals(Command.DEQUEUE.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                        || message.equals(Command.DEQUEUE.getCommand() + "@" + getBotUsername())) {
                     sendSimpleMessage(chatId, "Давай обговоримо це в приватних повідомленнях\uD83D\uDE09");
                 } else if (message.equals(Command.HELP.getCommand())
-                        || message.equals(Command.HELP.getCommand() + "@" + ConfigurationHolder.getConfiguration().getTelegram().getBot().getUsername())) {
+                        || message.equals(Command.HELP.getCommand() + "@" + getBotUsername())) {
                     sendHelp(chatId);
                 }
                 return;
@@ -55,26 +54,26 @@ public class Bot extends AbstractBot {
                     // next command will be executed automatically without additional call
                     if (operation.length > 1
                             && operation[0].equals(Command.WATCH.getCommand())) {
-                        addParticipantToQueueByScheduleId(chatId, update.getMessage().getMessageId(), Long.parseLong(operation[1]), participant, day);
+                        addParticipantToQueueByScheduleId(chatId, Long.parseLong(operation[1]), participant, day);
                         participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                         return;
                     }
 
                     // standard command call
-                    sendSchedule(chatId, day, Command.QUEUE.getCommand(), participant, "Обери чергу в яку хочеш записатись✍");
+                    sendSchedule(chatId, day, Command.QUEUE.getCommand(), participant, "✍Обери чергу в яку хочеш записатись✍");
                 } else if (message.equals(Command.DEQUEUE.getCommand())) {
                     String[] operation = participant.getOperation().split(" ");
                     // if participant selected watch as previous command
                     // next command will be executed automatically without additional call
                     if (operation.length > 1
                             && operation[0].equals(Command.WATCH.getCommand())) {
-                        removeParticipantFromQueueByScheduleId(chatId, update.getMessage().getMessageId(), Long.parseLong(operation[1]), participant, day);
+                        removeParticipantFromQueueByScheduleId(chatId, Long.parseLong(operation[1]), participant, day);
                         participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                         return;
                     }
 
                     // standard command call
-                    sendSchedule(chatId, day, Command.DEQUEUE.getCommand(), participant, "Обери чергу з якої хочеш вийти✖");
+                    sendSchedule(chatId, day, Command.DEQUEUE.getCommand(), participant, "✖Обери чергу з якої хочеш вийти✖");
                 } else if (message.equals(Command.STOP.getCommand())) {
                     // TODO
                     sendSimpleMessage(chatId, "Ця команда поки що немає змісту, вона запрацює із розширенням функціоналу :)");
@@ -132,15 +131,14 @@ public class Bot extends AbstractBot {
                     String operation = participant.getOperation();
                     if (operation.equals(Command.QUEUE.getCommand())) {
                         addParticipantToQueueByScheduleIdCallback(chatId, messageId, operationId, participant, day);
-                        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                     } else if (operation.equals(Command.DEQUEUE.getCommand())) {
                         removeParticipantFromQueueByScheduleIdCallback(chatId, messageId, operationId, participant, day);
-                        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
                     } else if (operation.equals(Command.WATCH.getCommand())) {
                         showQueueByScheduleIdCallback(chatId, messageId, operationId, day);
                     } else if (operation.equals(Command.REMOVE.getCommand())) {
-                        // TODO
                         showQueueParticipantsToRemoveByScheduleIdCallback(chatId, messageId, operationId, day);
+                    } else if (operation.equals(Command.REMOVE_PARTICIPANT.getCommand())) {
+                        deleteParticipantFromQueue(chatId, messageId, operationId, participant);
                     }
                 }
             } catch (NumberFormatException | ObjectNotFoundException e) {
@@ -149,8 +147,28 @@ public class Bot extends AbstractBot {
         }
     }
 
-    private void showQueueParticipantsToRemoveByScheduleIdCallback(long chatId, long messageId, long operationId, String day) {
-        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+    private void deleteParticipantFromQueue(long chatId, long messageId, long queueId, Participant participant) {
+
+        Queue queue = queueDAO.getQueueById(queueId);
+        queueDAO.changeParticipantStatus(queueId, Status.REMOVED.getStatus() + " " + Status.REMOVED.getEmoji());
+
+        Participant removedParticipant = queue.getParticipant();
+        if (configuration.getTelegram().getModerators().contains(removedParticipant.getChatId())) {
+            answerCallback(chatId, messageId, "Ти не можеш видалити сам себе!");
+            return;
+        }
+
+        // notify removed participants about changes
+        sendSimpleMessage(removedParticipant.getChatId(), "Тебе було видалено модератором з черги '" + queue.getSchedule().getSubject().getName() + "'\uD83D\uDE33");
+
+        answerCallback(chatId, messageId, "Я видалив учасника "
+                + (removedParticipant.getTag() != null ? "@" + removedParticipant.getTag() : removedParticipant.getName())
+                + " з черги '" + queue.getSchedule().getSubject().getName() + "'");
+        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
+    }
+
+    private void showQueueParticipantsToRemoveByScheduleIdCallback(long chatId, long messageId, long scheduleId, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(scheduleId, day);
         if (schedule != null) {
             List<Queue> queueList = queueDAO.getQueueList();
             if (!queueList.isEmpty()) {
@@ -158,19 +176,21 @@ public class Bot extends AbstractBot {
                 queueList.sort(compareByEnterDate);
 
                 Map<Long, String> queueParticipants = queueList.stream()
-                        .filter(queue -> queue.getSchedule().getId() == operationId) // filter by required schedule
+                        .filter(queue -> queue.getSchedule().getId() == scheduleId) // filter by required schedule
                         .collect(Collectors.toMap(Queue::getId, part -> {
                             String tag = part.getParticipant().getTag();
                             return (tag != null ? "@" + tag : part.getParticipant().getName());
                         }));
 
-                answerCallbackWithInlineButtons(chatId, messageId, "Обери учасника якого ти хочеш виключити з черги", queueParticipants);
+                answerCallbackWithInlineButtons(chatId, messageId, "\uD83D\uDEABОбери учасника якого ти хочеш виключити з черги\uD83D\uDEAB", queueParticipants);
+                Participant participant = participantDAO.getParticipantByChatId(chatId);
+                participantDAO.updateParticipantOperationStatus(participant.getId(), Command.REMOVE_PARTICIPANT.getCommand());
             }
         }
     }
 
-    private void showQueueByScheduleIdCallback(long chatId, long messageId, long operationId, String day) {
-        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+    private void showQueueByScheduleIdCallback(long chatId, long messageId, long scheduleId, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(scheduleId, day);
         if (schedule != null) {
             List<Queue> queueList = queueDAO.getQueueList();
             if (!queueList.isEmpty()) {
@@ -178,7 +198,7 @@ public class Bot extends AbstractBot {
                 queueList.sort(compareByEnterDate);
 
                 List<String> queueParticipants = queueList.stream()
-                        .filter(queue -> queue.getSchedule().getId() == operationId) // filter by required schedule
+                        .filter(queue -> queue.getSchedule().getId() == scheduleId) // filter by required schedule
                         .map(part -> {
                             String tag = part.getParticipant().getTag();
                             return (tag != null ? "@" + tag : part.getParticipant().getName()) + " " + part.getStatus();
@@ -204,8 +224,8 @@ public class Bot extends AbstractBot {
         }
     }
 
-    private void removeParticipantFromQueueByScheduleIdCallback(long chatId, long messageId, long operationId, Participant participant, String day) {
-        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+    private void removeParticipantFromQueueByScheduleIdCallback(long chatId, long messageId, long scheduleId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(scheduleId, day);
         if (schedule != null) {
 
             // check if queue are ready to be opened
@@ -219,14 +239,15 @@ public class Bot extends AbstractBot {
             if (queueList != null) {
                 // filter queue by schedule
                 List<Queue> queueParticipants = queueList.stream()
-                        .filter(queue -> queue.getSchedule().getId() == operationId)
+                        .filter(queue -> queue.getSchedule().getId() == scheduleId)
                         .collect(Collectors.toList());
+
                 if (!queueParticipants.isEmpty()) {
                     try {
                         // filter participant if participant in queue and not removed from this queue
                         Queue queueToRemove = filterParticipantToRemove(participant, queueParticipants);
 
-                        if (queueToRemove.getStatus().equals(Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji())) {
+                        if (isDequeued(queueToRemove) || isRemoved(queueToRemove)) {
                             answerCallback(chatId, messageId, "Ти не береш участь в черзі '" + schedule.getSubject().getName() + "'");
                             return;
                         }
@@ -246,10 +267,12 @@ public class Bot extends AbstractBot {
         } else {
             answerCallback(chatId, messageId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
         }
+
+        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
     }
 
-    private void addParticipantToQueueByScheduleIdCallback(long chatId, long messageId, long operationId, Participant participant, String day) {
-        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+    private void addParticipantToQueueByScheduleIdCallback(long chatId, long messageId, long scheduleId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(scheduleId, day);
         if (schedule != null) {
 
             // check if queue are ready to be opened
@@ -258,7 +281,7 @@ public class Bot extends AbstractBot {
                 return;
             }
 
-            List<Queue> queueList = filterQueue(operationId, participant);
+            List<Queue> queueList = filterQueueByScheduleIdAndParticipantId(scheduleId, participant.getId());
 
             // if participant didn't enter queue add to queue
             // else change status
@@ -268,6 +291,12 @@ public class Bot extends AbstractBot {
                         "Щоб вийти з неї надішли /dequeue");
             } else {
                 Queue queue = queueList.get(0);
+
+                if (isRemoved(queue)) {
+                    answerCallback(chatId, messageId, "Тебе було видалено модератором☹");
+                    return;
+                }
+
                 // if participant already in queue
                 if (queue.getStatus().equals(Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji())) {
                     answerCallback(chatId, messageId, "Ти вже є в черзі '" + schedule.getSubject().getName() + "'");
@@ -279,10 +308,12 @@ public class Bot extends AbstractBot {
         } else {
             answerCallback(chatId, messageId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
         }
+
+        participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
     }
 
-    private void removeParticipantFromQueueByScheduleId(long chatId, long messageId, long operationId, Participant participant, String day) {
-        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+    private void removeParticipantFromQueueByScheduleId(long chatId, long scheduleId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(scheduleId, day);
         if (schedule != null) {
 
             // check if queue are ready to be opened
@@ -296,14 +327,14 @@ public class Bot extends AbstractBot {
             if (queueList != null) {
                 // filter queue by schedule
                 List<Queue> queueParticipants = queueList.stream()
-                        .filter(queue -> queue.getSchedule().getId() == operationId)
+                        .filter(queue -> queue.getSchedule().getId() == scheduleId)
                         .collect(Collectors.toList());
                 if (!queueParticipants.isEmpty()) {
                     try {
                         // filter participant if participant in queue and not removed from this queue
                         Queue queueToRemove = filterParticipantToRemove(participant, queueParticipants);
 
-                        if (queueToRemove.getStatus().equals(Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji())) {
+                        if (isDequeued(queueToRemove) || isRemoved(queueToRemove)) {
                             sendSimpleMessage(chatId, "Ти не береш участь в черзі '" + schedule.getSubject().getName() + "'");
                             return;
                         }
@@ -325,16 +356,8 @@ public class Bot extends AbstractBot {
         }
     }
 
-    private Queue filterParticipantToRemove(Participant participant, List<Queue> queueParticipants) {
-        return queueParticipants.stream()
-                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())
-                        && !queue.getStatus().equals(Status.DEQUEUE.getStatus()))
-                .collect(Collectors.toList())
-                .get(0);
-    }
-
-    private void addParticipantToQueueByScheduleId(long chatId, long messageId, long operationId, Participant participant, String day) {
-        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(operationId, day);
+    private void addParticipantToQueueByScheduleId(long chatId, long scheduleId, Participant participant, String day) {
+        Schedule schedule = scheduleDAO.getScheduleByIdAndDay(scheduleId, day);
         if (schedule != null) {
 
             // check if queue are ready to be opened
@@ -343,7 +366,7 @@ public class Bot extends AbstractBot {
                 return;
             }
 
-            List<Queue> queueList = filterQueue(operationId, participant);
+            List<Queue> queueList = filterQueueByScheduleIdAndParticipantId(scheduleId, participant.getId());
 
             // if participant didn't enter queue add to queue
             // else change status
@@ -353,6 +376,12 @@ public class Bot extends AbstractBot {
                         "Щоб вийти з неї надішли /dequeue");
             } else {
                 Queue queue = queueList.get(0);
+
+                if (isRemoved(queue)) {
+                    sendSimpleMessage(chatId, "Тебе було видалено модератором☹");
+                    return;
+                }
+
                 // if participant already in queue
                 if (queue.getStatus().equals(Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji())) {
                     sendSimpleMessage(chatId, "Ти вже є в черзі '" + schedule.getSubject().getName() + "'");
@@ -366,11 +395,18 @@ public class Bot extends AbstractBot {
         }
     }
 
-    private List<Queue> filterQueue(long operationId, Participant participant) {
+    private List<Queue> filterQueueByScheduleIdAndParticipantId(long scheduleId, long participantId) {
         return queueDAO.getQueueList().stream()
-                .filter(queue -> queue.getSchedule().getId() == operationId) // filter queue by schedule
-                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId())) // filter by participant
+                .filter(queue -> queue.getSchedule().getId() == scheduleId) // filter queue by schedule
+                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participantId)) // filter by participant
                 .collect(Collectors.toList());
+    }
+
+    private Queue filterParticipantToRemove(Participant participant, List<Queue> queueParticipants) {
+        return queueParticipants.stream()
+                .filter(queue -> Objects.equals(queue.getParticipant().getId(), participant.getId()))
+                .collect(Collectors.toList())
+                .get(0);
     }
 
     private void createQueueEntity(Participant participant, Schedule schedule) {
@@ -438,7 +474,15 @@ public class Bot extends AbstractBot {
         return currentTime < scheduleTime - openTimeInMilliseconds;
     }
 
+    private boolean isRemoved(Queue queue) {
+        return queue.getStatus().equals(Status.REMOVED.getStatus() + " " + Status.REMOVED.getEmoji());
+    }
+
+    private boolean isDequeued(Queue queueToRemove) {
+        return queueToRemove.getStatus().equals(Status.DEQUEUE.getStatus() + " " + Status.DEQUEUE.getEmoji());
+    }
+
     private boolean isModerator(long chatId) {
-        return ConfigurationHolder.getConfiguration().getTelegram().getModerators().contains(chatId);
+        return configuration.getTelegram().getModerators().contains(chatId);
     }
 }

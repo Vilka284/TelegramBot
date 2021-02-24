@@ -3,16 +3,17 @@ package enumeration;
 public enum Command {
 
     // participant commands
-    START("/start", "Почни роботу зі мною цією командою\n", false, false),
-    WATCH("/watch", "Дивитись чергу\n", true, false),
-    QUEUE("/queue", "Записатись в чергу\n", true, false),
+    START("/start", "Почни роботу зі мною цією командою", false, false),
+    WATCH("/watch", "Дивитись чергу", true, false),
+    QUEUE("/queue", "Записатись в чергу", true, false),
     DEQUEUE("/dequeue", "Вийти з черги", true, false),
     STOP("/stop", "Більше не писати тобі", false, false),
     HELP("/help", "", false, false),
 
     // moderator commands
-    REMOVE("/remove", "Видаляй учасників з черги цією командою\n", true, true),
-    BAN("/ban", "Видаляй учасників цією командою назавжди\n", true, true),
+    REMOVE("/remove", "Видаляй учасників з черги цією командою", true, true),
+    REMOVE_PARTICIPANT("/removeparticipant", "buffer command", false, false),
+    BAN("/ban", "Видаляй учасників цією командою назавжди ", true, true),
 
     NONE("none", "", false, false);
 

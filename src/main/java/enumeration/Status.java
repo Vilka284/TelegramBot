@@ -4,6 +4,7 @@ public enum Status {
 
     QUEUE("В черзі", "\uD83D\uDFE2"),
     DEQUEUE("Не в черзі", "❌"),
+    REMOVED("Видалено модератором", "☠"),
     COMPLETE("Здав", "✅");
 
     private final String status;

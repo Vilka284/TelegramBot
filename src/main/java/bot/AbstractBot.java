@@ -83,10 +83,14 @@ public abstract class AbstractBot extends TelegramLongPollingBot {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         String commands = Arrays.stream(Command.values())
-                .filter(command -> ConfigurationHolder.getConfiguration()
-                        .getTelegram()
-                        .getModerators()
-                        .contains(chatId) ? command.isModerator() || command.isVisible() : command.isVisible())
+                .filter(Command::isVisible)
+                .filter(command -> {
+                    boolean isModerator = configuration.getTelegram().getModerators().contains(chatId);
+                    if (!isModerator) {
+                        return !command.isModerator();
+                    }
+                    return true;
+                })
                 .map(command -> "▪ " + command.getCommand() + " - " + command.getHelp() + "\n")
                 .collect(Collectors.joining());
         message.setText(commands);
@@ -146,11 +150,11 @@ public abstract class AbstractBot extends TelegramLongPollingBot {
         return markupKeyboard;
     }
 
-    public void answerCallback(long chatId, long messageId, String text) {
+    public void answerCallback(long chatId, long messageId, String message) {
         EditMessageText new_message = new EditMessageText();
         new_message.setChatId(String.valueOf(chatId));
         new_message.setMessageId(toIntExact(messageId));
-        new_message.setText(text);
+        new_message.setText(message);
         try {
             execute(new_message);
         } catch (TelegramApiException e) {
@@ -159,6 +163,15 @@ public abstract class AbstractBot extends TelegramLongPollingBot {
     }
 
     void answerCallbackWithInlineButtons(long chatId, long messageId, String message, Map<Long, String> queueParticipants) {
-        // TODO
+        EditMessageText new_message = new EditMessageText();
+        new_message.setChatId(String.valueOf(chatId));
+        new_message.setMessageId(toIntExact(messageId));
+        new_message.setText(message);
+        new_message.setReplyMarkup(setInlineButtons(queueParticipants));
+        try {
+            execute(new_message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 }
