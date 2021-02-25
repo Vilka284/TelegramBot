@@ -16,6 +16,7 @@ public class Main {
 
     public static void main(String[] args) {
         configurationMapper.run();
+        // TODO make scheduling future task in database
         executeScheduling();
         try {
             TelegramBotsApi telegramBotApi = new TelegramBotsApi(DefaultBotSession.class);

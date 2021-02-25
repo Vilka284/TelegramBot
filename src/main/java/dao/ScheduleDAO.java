@@ -3,6 +3,7 @@ package dao;
 import entity.Schedule;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import util.HibernateUtil;
 
 import java.util.List;
@@ -37,6 +38,8 @@ public final class ScheduleDAO {
     }
 
     public void addSchedule(Schedule schedule) {
-        // TODO
+        final Transaction transaction = session.beginTransaction();
+        session.save(schedule);
+        transaction.commit();
     }
 }

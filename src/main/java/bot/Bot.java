@@ -85,7 +85,7 @@ public class Bot extends AbstractBot {
                     sendSchedule(chatId, day, Command.REMOVE.getCommand(), participant, "\uD83D\uDEABОбери чергу з якої ти хочеш видалити учасника\uD83D\uDEAB");
                 } else if (message.equals(Command.BAN.getCommand()) && isModerator(chatId)) {
                     // TODO
-                    sendSimpleMessage(chatId, "Поки що ти не можеш нікого банити");
+                    sendSimpleMessage(chatId, "Ця команда поки що немає змісту, вона запрацює із розширенням функціоналу :)");
                 } else {
                     sendSimpleMessage(chatId, "Я тебе не розумію, скористайся командою /help");
                 }
