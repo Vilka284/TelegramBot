@@ -13,4 +13,5 @@ telegram:
   owner:
     name: Andrii
     tag: crinitus_vulpi
+    chatId: 1
   moderators: [2, 1]

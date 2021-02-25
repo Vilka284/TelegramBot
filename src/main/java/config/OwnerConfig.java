@@ -9,5 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public final class OwnerConfig {
     private String name;
+    private Long chatId;
     private String tag;
 }
