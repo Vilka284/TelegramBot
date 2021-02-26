@@ -185,6 +185,8 @@ public class Bot extends AbstractBot {
                 answerCallbackWithInlineButtons(chatId, messageId, "\uD83D\uDEABОбери учасника якого ти хочеш виключити з черги\uD83D\uDEAB", queueParticipants);
                 Participant participant = participantDAO.getParticipantByChatId(chatId);
                 participantDAO.updateParticipantOperationStatus(participant.getId(), Command.REMOVE_PARTICIPANT.getCommand());
+            } else {
+                answerCallback(chatId, messageId, "В черзі '" + schedule.getSubject().getName() + "' нікого немає");
             }
         }
     }
@@ -212,10 +214,10 @@ public class Bot extends AbstractBot {
                     }
                     answerCallback(chatId, messageId, queue.toString());
                 } else {
-                    answerCallback(chatId, messageId, "В цій черзі немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
+                    answerCallback(chatId, messageId, "В черзі '" + schedule.getSubject().getName() + "' немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
                 }
             } else {
-                answerCallback(chatId, messageId, "В цій черзі немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
+                answerCallback(chatId, messageId, "В черзі '" + schedule.getSubject().getName() + "' немає нікого\uD83D\uDC40, будь першим надіславши команду /queue");
             }
 
             // update participant choice watch + schedule id
@@ -303,6 +305,7 @@ public class Bot extends AbstractBot {
                     return;
                 }
                 queueDAO.changeParticipantStatus(queue.getId(), Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji());
+                queueDAO.setNowTime(queue.getId());
                 answerCallback(chatId, messageId, "Я відновив тебе в черзі '" + schedule.getSubject().getName() + "'");
             }
         } else {
@@ -388,6 +391,7 @@ public class Bot extends AbstractBot {
                     return;
                 }
                 queueDAO.changeParticipantStatus(queue.getId(), Status.QUEUE.getStatus() + " " + Status.QUEUE.getEmoji());
+                queueDAO.setNowTime(queue.getId());
                 sendSimpleMessage(chatId, "Я відновив тебе в черзі '" + schedule.getSubject().getName() + "'");
             }
         } else {

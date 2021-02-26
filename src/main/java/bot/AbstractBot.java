@@ -174,9 +174,4 @@ public abstract class AbstractBot extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
-
-    void messageOwner(String message) {
-        long chatId = configuration.getTelegram().getOwner().getChatId();
-        sendSimpleMessage(chatId, message);
-    }
 }

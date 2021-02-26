@@ -6,6 +6,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import util.HibernateUtil;
 
+import java.util.Date;
 import java.util.List;
 
 public final class QueueDAO {
@@ -44,6 +45,14 @@ public final class QueueDAO {
         final Transaction transaction = session.beginTransaction();
         Queue queue = getQueueById(id);
         queue.setStatus(status);
+        session.save(queue);
+        transaction.commit();
+    }
+
+    public void setNowTime(long id) {
+        final Transaction transaction = session.beginTransaction();
+        Queue queue = getQueueById(id);
+        queue.setEnter_date(new Date());
         session.save(queue);
         transaction.commit();
     }
