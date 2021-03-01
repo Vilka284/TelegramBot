@@ -21,7 +21,7 @@ public class Bot extends AbstractBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String message = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
-            String day = getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
+            String day = Day.getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
 
             // if bot in group
             if (update.getMessage().getChat().getType().equals("group")
@@ -112,7 +112,7 @@ public class Bot extends AbstractBot {
             String data = update.getCallbackQuery().getData();
             long messageId = update.getCallbackQuery().getMessage().getMessageId();
             long chatId = update.getCallbackQuery().getMessage().getChatId();
-            String day = getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
+            String day = Day.getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
 
             // check operations
             try {
@@ -150,13 +150,14 @@ public class Bot extends AbstractBot {
     private void deleteParticipantFromQueue(long chatId, long messageId, long queueId, Participant participant) {
 
         Queue queue = queueDAO.getQueueById(queueId);
-        queueDAO.changeParticipantStatus(queueId, Status.REMOVED.getStatus() + " " + Status.REMOVED.getEmoji());
 
         Participant removedParticipant = queue.getParticipant();
         if (configuration.getTelegram().getModerators().contains(removedParticipant.getChatId())) {
-            answerCallback(chatId, messageId, "Ти не можеш видалити сам себе!");
+            answerCallback(chatId, messageId, "Ти не можеш видаляти модераторів!");
             return;
         }
+
+        queueDAO.changeParticipantStatus(queueId, Status.REMOVED.getStatus() + " " + Status.REMOVED.getEmoji());
 
         // notify removed participants about changes
         sendSimpleMessage(removedParticipant.getChatId(), "Тебе було видалено модератором з черги '" + queue.getSchedule().getSubject().getName() + "'\uD83D\uDE33");
@@ -210,7 +211,10 @@ public class Bot extends AbstractBot {
                 if (!queueParticipants.isEmpty()) {
                     StringBuilder queue = new StringBuilder("Черга '" + schedule.getSubject().getName() + " " + schedule.getHour() + "':\n");
                     for (int i = 0; i < queueParticipants.size(); i++) {
-                        queue.append(i + 1).append(". ").append(queueParticipants.get(i)).append("\n");
+                        queue.append(i + 1)
+                                .append(". ")
+                                .append(queueParticipants.get(i))
+                                .append("\n");
                     }
                     answerCallback(chatId, messageId, queue.toString());
                 } else {
@@ -458,13 +462,6 @@ public class Bot extends AbstractBot {
                     String teacher = schedule.getSubject().getTeacher();
                     return time + " - " + subject + "\n" + teacher;
                 }));
-    }
-
-    private Day getDayById(int id) {
-        return Arrays.stream(Day.values())
-                .filter(day -> day.getId() == id)
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No such day exists"));
     }
 
     private boolean isOpenToQueue(Schedule schedule) {

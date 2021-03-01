@@ -42,4 +42,9 @@ public final class ScheduleDAO {
         session.save(schedule);
         transaction.commit();
     }
+
+    public List<Schedule> getScheduleListByDay(String day) {
+        final Query query = session.createQuery("from Schedule s where s.day = '" + day + "'");
+        return (List<Schedule>) query.list();
+    }
 }

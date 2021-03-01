@@ -1,5 +1,7 @@
 package enumeration;
 
+import java.util.Arrays;
+
 public enum Day {
     SUNDAY(1, "Sun"),
     MONDAY(2, "Mon"),
@@ -23,5 +25,12 @@ public enum Day {
 
     public String getName() {
         return name;
+    }
+
+    public static Day getDayById(int id) {
+        return Arrays.stream(Day.values())
+                .filter(day -> day.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No such day exists"));
     }
 }

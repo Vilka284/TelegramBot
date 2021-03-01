@@ -27,18 +27,22 @@ import static java.lang.Math.toIntExact;
 
 public abstract class AbstractBot extends TelegramLongPollingBot {
 
-    public final Logger logger = LoggerFactory.getLogger(Logger.class);
-    public final Configuration configuration = ConfigurationHolder.getConfiguration();
+    final Logger logger = LoggerFactory.getLogger(Logger.class);
+    final Configuration configuration = ConfigurationHolder.getConfiguration();
 
-    public final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
-    public final QueueDAO queueDAO = QueueDAO.getInstance();
-    public final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
-    public final SubjectDAO subjectDAO = SubjectDAO.getInstance();
+    final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
+    final QueueDAO queueDAO = QueueDAO.getInstance();
+    final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
+    final SubjectDAO subjectDAO = SubjectDAO.getInstance();
 
-    public final int openTimeInMilliseconds = 30 * 60 * 1000; // 30 minutes
+    final int openTimeInMilliseconds = 30 * 60 * 1000; // 30 minutes
 
-    public final Comparator<Queue> compareByEnterDate = (q1, q2) ->
+    static final Comparator<Queue> compareByEnterDate = (q1, q2) ->
             Long.valueOf(q1.getEnter_date().getTime()).compareTo(q2.getEnter_date().getTime());
+
+    public static Comparator<Queue> getQueueComparatorByEnterDate() {
+        return compareByEnterDate;
+    }
 
     @Override
     public String getBotUsername() {
