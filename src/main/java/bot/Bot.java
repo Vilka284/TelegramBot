@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 
 public class Bot extends AbstractBot {
 
+    private Map<Long, Integer> groupChatsCalledTimes = new HashMap<>();
+
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -33,7 +35,7 @@ public class Bot extends AbstractBot {
                         || message.equals(Command.QUEUE.getCommand() + "@" + getBotUsername())
                         || message.equals(Command.DEQUEUE.getCommand())
                         || message.equals(Command.DEQUEUE.getCommand() + "@" + getBotUsername())) {
-                    sendSimpleMessage(chatId, "Давай обговоримо це в приватних повідомленнях\uD83D\uDE09");
+                    respondInGroup(chatId);
                 } else if (message.equals(Command.HELP.getCommand())
                         || message.equals(Command.HELP.getCommand() + "@" + getBotUsername())) {
                     sendHelp(chatId);
@@ -144,6 +146,21 @@ public class Bot extends AbstractBot {
             } catch (NumberFormatException | ObjectNotFoundException e) {
                 logger.debug(e.getMessage());
             }
+        }
+    }
+
+    private void respondInGroup(long groupChatId) {
+        if (groupChatsCalledTimes.containsKey(groupChatId)) {
+            if (groupChatsCalledTimes.get(groupChatId) > 2) {
+                groupChatsCalledTimes.put(groupChatId, 0);
+                sendSimpleMessage(groupChatId, "Ну скільки можна\uD83D\uDE4F");
+            } else {
+                groupChatsCalledTimes.put(groupChatId, groupChatsCalledTimes.get(groupChatId) + 1);
+                sendSimpleMessage(groupChatId, "Давай обговоримо це в приватних повідомленнях\uD83D\uDE09");
+            }
+        } else {
+            groupChatsCalledTimes.put(groupChatId, 0);
+            sendSimpleMessage(groupChatId, "Давай обговоримо це в приватних повідомленнях\uD83D\uDE09");
         }
     }
 

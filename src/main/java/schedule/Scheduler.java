@@ -26,7 +26,7 @@ public final class Scheduler {
 
             Trigger trigger = newTrigger()
                     .withIdentity("QueueClearTrigger", "Queue")
-                    .withSchedule(dailyAtHourAndMinute(0, 0))
+                    .withSchedule(dailyAtHourAndMinute(23, 59))
                     .forJob(jobDetail)
                     .build();
 

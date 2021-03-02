@@ -97,7 +97,7 @@ public abstract class AbstractBot extends TelegramLongPollingBot {
                 })
                 .map(command -> "▪ " + command.getCommand() + " - " + command.getHelp() + "\n")
                 .collect(Collectors.joining());
-        message.setText(commands);
+        message.setText("Привіт, я QueueBot. Ти можеш використовувати наступні команди:\n" + commands);
         try {
             execute(message);
         } catch (TelegramApiException e) {
