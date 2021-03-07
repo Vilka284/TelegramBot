@@ -2,10 +2,7 @@ package bot;
 
 import config.Configuration;
 import config.ConfigurationHolder;
-import dao.ParticipantDAO;
-import dao.QueueDAO;
-import dao.ScheduleDAO;
-import dao.SubjectDAO;
+import dao.*;
 import entity.Queue;
 import enumeration.Command;
 import org.slf4j.Logger;
@@ -27,18 +24,16 @@ import static java.lang.Math.toIntExact;
 
 public abstract class AbstractBot extends TelegramLongPollingBot {
 
+    static final Comparator<Queue> compareByEnterDate = (q1, q2) ->
+            Long.valueOf(q1.getEnter_date().getTime()).compareTo(q2.getEnter_date().getTime());
     final Logger logger = LoggerFactory.getLogger(Logger.class);
     final Configuration configuration = ConfigurationHolder.getConfiguration();
-
     final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
     final QueueDAO queueDAO = QueueDAO.getInstance();
     final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
     final SubjectDAO subjectDAO = SubjectDAO.getInstance();
-
+    final WatchCallbackDAO watchCallbackDAO = WatchCallbackDAO.getInstance();
     final int openTimeInMilliseconds = 30 * 60 * 1000; // 30 minutes
-
-    static final Comparator<Queue> compareByEnterDate = (q1, q2) ->
-            Long.valueOf(q1.getEnter_date().getTime()).compareTo(q2.getEnter_date().getTime());
 
     public static Comparator<Queue> getQueueComparatorByEnterDate() {
         return compareByEnterDate;

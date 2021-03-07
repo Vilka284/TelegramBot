@@ -37,3 +37,13 @@ create table queue
     foreign key (participant_id) references participant (id),
     foreign key (schedule_id) references schedule (id)
 );
+
+create table watch_callback
+(
+    id             serial primary key,
+    participant_id int not null unique,
+    schedule_id    int not null,
+    message_id     int not null,
+    foreign key (participant_id) references participant (id),
+    foreign key (schedule_id) references schedule (id)
+);

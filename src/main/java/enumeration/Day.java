@@ -11,12 +11,19 @@ public enum Day {
     FRIDAY(6, "Fri"),
     SATURDAY(7, "Sat");
 
-    private int id;
-    private String name;
+    private final int id;
+    private final String name;
 
     Day(int id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    public static Day getDayById(int id) {
+        return Arrays.stream(Day.values())
+                .filter(day -> day.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No such day exists"));
     }
 
     public int getId() {
@@ -25,12 +32,5 @@ public enum Day {
 
     public String getName() {
         return name;
-    }
-
-    public static Day getDayById(int id) {
-        return Arrays.stream(Day.values())
-                .filter(day -> day.getId() == id)
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No such day exists"));
     }
 }

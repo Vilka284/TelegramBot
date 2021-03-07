@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractJob implements Job {
 
     public final Logger logger = LoggerFactory.getLogger(Logger.class);
-    public final MessageSender messageSender = MessageSender.getInstance();
+    public final MessageSender messageSender = new MessageSender();
     public final Configuration configuration = ConfigurationHolder.getConfiguration();
 
     @Override

@@ -31,7 +31,6 @@ public class QueueClearJob extends AbstractJob {
             StringBuilder message = new StringBuilder("✉ Чергу очищено ✉\n\n");
 
             for (Schedule schedule : schedules) {
-                // TODO append to message
                 List<String> queueParticipants = queueList.stream()
                         .filter(queue -> queue.getSchedule().getId().equals(schedule.getId()))
                         .map(part -> {

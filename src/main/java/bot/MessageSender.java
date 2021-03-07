@@ -9,16 +9,14 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+/*
+    The message sender class for manual sending messages
+    to divide logic from automated bot operations
+ */
 public class MessageSender extends DefaultAbsSender {
 
-    public final Logger logger = LoggerFactory.getLogger(Logger.class);
+    private final Logger logger = LoggerFactory.getLogger(Logger.class);
     private final Configuration configuration = ConfigurationHolder.getConfiguration();
-
-    private static MessageSender instance;
-
-    public static MessageSender getInstance() {
-        return instance != null ? instance : new MessageSender();
-    }
 
     public MessageSender() {
         super(new DefaultBotOptions());

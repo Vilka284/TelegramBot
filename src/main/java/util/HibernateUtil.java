@@ -2,10 +2,7 @@ package util;
 
 import config.ConfigurationHolder;
 import config.ConnectionConfig;
-import entity.Participant;
-import entity.Queue;
-import entity.Schedule;
-import entity.Subject;
+import entity.*;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -46,6 +43,7 @@ public class HibernateUtil {
             configuration.addAnnotatedClass(Subject.class);
             configuration.addAnnotatedClass(Schedule.class);
             configuration.addAnnotatedClass(Queue.class);
+            configuration.addAnnotatedClass(WatchCallback.class);
 
             ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
                     .applySettings(configuration.getProperties()).build();

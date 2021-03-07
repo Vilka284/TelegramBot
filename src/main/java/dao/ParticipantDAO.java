@@ -43,6 +43,17 @@ public final class ParticipantDAO {
         return (List<Participant>) query.list();
     }
 
+    public Participant updateParticipantData(long id, String name, String tag) {
+        final Transaction transaction = session.beginTransaction();
+        Participant participant = session.load(Participant.class, id);
+        participant.setName(name);
+        participant.setTag(tag);
+        session.update(participant);
+        session.flush();
+        transaction.commit();
+        return getParticipantById(id);
+    }
+
     public void updateParticipantOperationStatus(long id, String operation) {
         final Transaction transaction = session.beginTransaction();
         Participant participant = session.load(Participant.class, id);

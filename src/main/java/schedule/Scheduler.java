@@ -22,15 +22,24 @@ public final class Scheduler {
 
             org.quartz.Scheduler scheduler = schedulerFactory.getScheduler();
 
-            JobDetail jobDetail = newJob(QueueClearJob.class).withIdentity("QueueClearJob").build();
+            JobDetail queueClearJob = newJob(QueueClearJob.class).withIdentity("QueueClearJob").build();
+            JobDetail callbackClearJob = newJob(CallbackClearJob.class).withIdentity("CallbackClearJob").build();
 
-            Trigger trigger = newTrigger()
+            Trigger queueClearTrigger = newTrigger()
                     .withIdentity("QueueClearTrigger", "Queue")
                     .withSchedule(dailyAtHourAndMinute(23, 59))
-                    .forJob(jobDetail)
+                    .forJob(queueClearJob)
                     .build();
 
-            scheduler.scheduleJob(jobDetail, trigger);
+            Trigger callbackClearTrigger = newTrigger()
+                    .withIdentity("CallbackClearTrigger", "Callback")
+                    .withSchedule(dailyAtHourAndMinute(23, 59))
+                    .forJob(callbackClearJob)
+                    .build();
+
+            scheduler.scheduleJob(queueClearJob, queueClearTrigger);
+            scheduler.scheduleJob(callbackClearJob, callbackClearTrigger);
+
             scheduler.start();
         } catch (SchedulerException e) {
             logger.error(e.getMessage(), e);
