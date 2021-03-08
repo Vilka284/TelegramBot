@@ -8,7 +8,7 @@ import util.HibernateUtil;
 
 import java.util.List;
 
-public class WatchCallbackDAO {
+public final class WatchCallbackDAO {
     private static WatchCallbackDAO instance;
     private static Session session;
 

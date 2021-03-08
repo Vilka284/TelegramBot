@@ -43,17 +43,20 @@ public class QueueClearJob extends AbstractJob {
                         .append(schedule.getSubject().getName())
                         .append(" ")
                         .append(schedule.getHour())
-                        .append("':\n");
+                        .append("'♻\n");
 
-                for (int i = 0; i < queueParticipants.size(); i++) {
-                    message.append(i + 1)
-                            .append(". ")
-                            .append(queueParticipants.get(i))
-                            .append(" ♻\n");
+                if (queueParticipants.size() > 0) {
+                    for (int i = 0; i < queueParticipants.size(); i++) {
+                        message.append(i + 1)
+                                .append(". ")
+                                .append(queueParticipants.get(i))
+                                .append("\n");
+                    }
+                } else {
+                    message.append("Порожня\uD83E\uDD37\u200D♂\n");
                 }
 
                 message.append("\n\n");
-
             }
             messageSender.sendMessage(configuration.getTelegram().getOwner().getChatId(), message.toString(), true);
         } else {

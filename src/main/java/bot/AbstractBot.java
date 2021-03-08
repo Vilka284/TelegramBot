@@ -16,6 +16,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import service.StatusService;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,8 +25,7 @@ import static java.lang.Math.toIntExact;
 
 public abstract class AbstractBot extends TelegramLongPollingBot {
 
-    static final Comparator<Queue> compareByEnterDate = (q1, q2) ->
-            Long.valueOf(q1.getEnter_date().getTime()).compareTo(q2.getEnter_date().getTime());
+    static final Comparator<Queue> compareByEnterDate = Comparator.comparingLong(q -> q.getEnter_date().getTime());
     final Logger logger = LoggerFactory.getLogger(Logger.class);
     final Configuration configuration = ConfigurationHolder.getConfiguration();
     final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
@@ -33,6 +33,7 @@ public abstract class AbstractBot extends TelegramLongPollingBot {
     final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
     final SubjectDAO subjectDAO = SubjectDAO.getInstance();
     final WatchCallbackDAO watchCallbackDAO = WatchCallbackDAO.getInstance();
+    final StatusService statusService = new StatusService();
     final int openTimeInMilliseconds = 30 * 60 * 1000; // 30 minutes
 
     public static Comparator<Queue> getQueueComparatorByEnterDate() {

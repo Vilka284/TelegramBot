@@ -12,8 +12,9 @@ public enum Command {
 
     // moderator commands
     REMOVE("/remove", "Видаляй учасників з черги цією командою", true, true),
-    REMOVE_PARTICIPANT("/removeparticipant", "buffer command", false, false),
+    REMOVE_PARTICIPANT("/removeparticipant", "buffer command", false, false), // buffer command
     BAN("/ban", "Видаляй учасників цією командою назавжди ", true, true),
+    STATUS("/status", "Статус бота", true, true),
 
     NONE("none", "", false, false);
 
