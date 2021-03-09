@@ -61,7 +61,7 @@ jobs:
 
     - name: Autobuild
       run: |
-       mvn clean install
+       mvn clean install -X
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
