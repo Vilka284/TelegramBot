@@ -30,7 +30,8 @@ public final class WatchCallbackDAO {
     }
 
     public WatchCallback getCallbackByParticipantId(long id) {
-        final Query query = session.createQuery("from WatchCallback where participant.id = " + id);
+        final Query query = session.createQuery("from WatchCallback where participant.id = :id");
+        query.setLong("id", id);
         return (WatchCallback) query.uniqueResult();
     }
 

@@ -29,12 +29,8 @@ public final class ParticipantDAO {
     }
 
     public Participant getParticipantByChatId(long chatId) {
-        final Query query = session.createQuery("from Participant where chat_id = " + chatId);
-        return (Participant) query.uniqueResult();
-    }
-
-    public Participant getParticipantByTag(String tag) {
-        final Query query = session.createQuery("from Participant where tag = '" + tag + "'");
+        final Query query = session.createQuery("from Participant p where p.chatId = :chatId");
+        query.setLong("chatId", chatId);
         return (Participant) query.uniqueResult();
     }
 

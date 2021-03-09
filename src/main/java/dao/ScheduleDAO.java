@@ -23,12 +23,15 @@ public final class ScheduleDAO {
     }
 
     public Schedule getScheduleByIdAndDay(long id, String day) {
-        final Query query = session.createQuery("from Schedule s where s.id = " + id + " and s.day = '" + day + "'");
+        final Query query = session.createQuery("from Schedule s where s.id = :id and s.day = :day");
+        query.setLong("id", id);
+        query.setString("day", day);
         return (Schedule) query.uniqueResult();
     }
 
     public Schedule getScheduleBySubjectId(long subjectId) {
-        final Query query = session.createQuery("from Schedule s where s.subject.id = '" + subjectId + "'");
+        final Query query = session.createQuery("from Schedule s where s.subject.id = :id");
+        query.setLong("id", subjectId);
         return (Schedule) query.uniqueResult();
     }
 
@@ -44,7 +47,8 @@ public final class ScheduleDAO {
     }
 
     public List<Schedule> getScheduleListByDay(String day) {
-        final Query query = session.createQuery("from Schedule s where s.day = '" + day + "'");
+        final Query query = session.createQuery("from Schedule s where s.day = :day");
+        query.setString("day", day);
         return (List<Schedule>) query.list();
     }
 }
