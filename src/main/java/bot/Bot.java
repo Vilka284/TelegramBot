@@ -8,6 +8,7 @@ import enumeration.Command;
 import enumeration.Day;
 import enumeration.Status;
 import org.hibernate.ObjectNotFoundException;
+import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 
@@ -129,6 +130,7 @@ public class Bot extends AbstractBot {
             }
         } else if (update.hasCallbackQuery()) {
             String data = update.getCallbackQuery().getData();
+            Chat chat = update.getCallbackQuery().getMessage().getChat();
             long messageId = update.getCallbackQuery().getMessage().getMessageId();
             long chatId = update.getCallbackQuery().getMessage().getChatId();
 
@@ -140,6 +142,8 @@ public class Bot extends AbstractBot {
                 if (update.getCallbackQuery().getMessage().getChat().getType().equals("group")
                         || update.getCallbackQuery().getMessage().getChat().getType().equals("supergroup")) {
                     showQueueByScheduleIdCallback(chatId, messageId, operationId, false);
+                    //TODO add group entity
+                    //TODO add groups to watch callbacks
                     return;
                 }
 
