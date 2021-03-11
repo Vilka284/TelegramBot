@@ -21,7 +21,7 @@ public class Schedule {
     @Basic
     private Time hour;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
     @JoinColumn(name = "subject_id", referencedColumnName = "id", nullable = false)
     private Subject subject;
 }

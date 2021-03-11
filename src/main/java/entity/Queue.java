@@ -21,11 +21,11 @@ public class Queue {
     @Basic
     private String status;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
     @JoinColumn(name = "schedule_id", referencedColumnName = "id", nullable = false)
     private Schedule schedule;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
     @JoinColumn(name = "participant_id", referencedColumnName = "id", nullable = false)
     private Participant participant;
 }
