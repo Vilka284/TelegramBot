@@ -1,9 +1,7 @@
 package bot;
 
-import entity.Participant;
+import entity.*;
 import entity.Queue;
-import entity.Schedule;
-import entity.WatchCallback;
 import enumeration.Command;
 import enumeration.Day;
 import enumeration.Status;
@@ -27,11 +25,12 @@ public class Bot extends AbstractBot {
         today = Day.getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
         if (update.hasMessage() && update.getMessage().hasText()) {
             String message = update.getMessage().getText();
+            Chat chat = update.getMessage().getChat();
             long chatId = update.getMessage().getChatId();
 
             // if bot in group
-            if (update.getMessage().getChat().getType().equals("group")
-                    || update.getMessage().getChat().getType().equals("supergroup")) {
+            if (chat.getType().equals("group")
+                    || chat.getType().equals("supergroup")) {
                 if (message.equals(Command.WATCH.getCommand())
                         || message.equals(Command.WATCH.getCommand() + "@" + getBotUsername())) {
                     sendSchedule(chatId);
@@ -49,6 +48,7 @@ public class Bot extends AbstractBot {
 
             // check commands
             Participant participant = participantDAO.getParticipantByChatId(chatId);
+            logger.info("\n***\nParticipant with chatId " + chatId + " called the bot with message " + message + "\n***\n");
             if (participant != null) {
 
                 // if participant change personal data update data in db
@@ -139,11 +139,21 @@ public class Bot extends AbstractBot {
                 long operationId = Long.parseLong(data);
 
                 // if bot in group
-                if (update.getCallbackQuery().getMessage().getChat().getType().equals("group")
-                        || update.getCallbackQuery().getMessage().getChat().getType().equals("supergroup")) {
+                if (chat.getType().equals("group")
+                        || chat.getType().equals("supergroup")) {
                     showQueueByScheduleIdCallback(chatId, messageId, operationId, false);
-                    //TODO add group entity
-                    //TODO add groups to watch callbacks
+                    Participant groupParticipant = participantDAO.getParticipantByChatId(chatId);
+
+                    if (groupParticipant == null) {
+                        groupParticipant = new Participant();
+                        groupParticipant.setChatId(chatId);
+                        groupParticipant.setTag("group " + chatId);
+                        groupParticipant.setName(chat.getTitle());
+                        groupParticipant.setOperation(Command.NONE.getCommand());
+                        participantDAO.addParticipant(groupParticipant);
+                    }
+
+                    addParticipantToWatchCallback(messageId, groupParticipant, operationId);
                     return;
                 }
 
@@ -325,10 +335,10 @@ public class Bot extends AbstractBot {
                         answerCallback(chatId, messageId, "Тебе немає в цій черзі\uD83D\uDE44");
                     }
                 } else {
-                    answerCallback(chatId, messageId, "Ця черга порожня\uD83D\uDEAB");
+                    answerCallback(chatId, messageId, "\uD83D\uDEABЦя черга порожня\uD83D\uDEAB");
                 }
             } else {
-                answerCallback(chatId, messageId, "Ця черга порожня\uD83D\uDEAB");
+                answerCallback(chatId, messageId, "\uD83D\uDEABЦя черга порожня\uD83D\uDEAB");
             }
         } else {
             answerCallback(chatId, messageId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");
@@ -409,10 +419,10 @@ public class Bot extends AbstractBot {
                         sendSimpleMessage(chatId, "Тебе немає в цій черзі\uD83D\uDE44");
                     }
                 } else {
-                    sendSimpleMessage(chatId, "Ця черга порожня\uD83D\uDEAB");
+                    sendSimpleMessage(chatId, "\uD83D\uDEABЦя черга порожня\uD83D\uDEAB");
                 }
             } else {
-                sendSimpleMessage(chatId, "Ця черга порожня\uD83D\uDEAB");
+                sendSimpleMessage(chatId, "\uD83D\uDEABЦя черга порожня\uD83D\uDEAB");
             }
         } else {
             sendSimpleMessage(chatId, "Такої події на сьогодні немає\uD83E\uDD37\u200D♂");

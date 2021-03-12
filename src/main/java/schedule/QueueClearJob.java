@@ -8,6 +8,7 @@ import entity.Schedule;
 import enumeration.Day;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import util.HibernateUtil;
 
 import java.util.Calendar;
 import java.util.List;
@@ -24,8 +25,12 @@ public class QueueClearJob extends AbstractJob {
         List<Schedule> schedules = scheduleDAO.getScheduleListByDay(day);
         List<Queue> queueList = queueDAO.getQueueList();
         queueList.sort(AbstractBot.getQueueComparatorByEnterDate());
+
         // clear queue
         queueDAO.clearQueue();
+
+        // clear session cache
+        HibernateUtil.currentSession().clear();
 
         if (!schedules.isEmpty()) {
             StringBuilder message = new StringBuilder("✉ Чергу очищено ✉\n\n");

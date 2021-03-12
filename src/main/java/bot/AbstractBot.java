@@ -25,16 +25,18 @@ import static java.lang.Math.toIntExact;
 
 public abstract class AbstractBot extends TelegramLongPollingBot {
 
-    static final Comparator<Queue> compareByEnterDate = Comparator.comparingLong(q -> q.getEnter_date().getTime());
-    final Logger logger = LoggerFactory.getLogger(Logger.class);
-    final Configuration configuration = ConfigurationHolder.getConfiguration();
-    final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
-    final QueueDAO queueDAO = QueueDAO.getInstance();
-    final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
-    final SubjectDAO subjectDAO = SubjectDAO.getInstance();
-    final WatchCallbackDAO watchCallbackDAO = WatchCallbackDAO.getInstance();
-    final StatusService statusService = new StatusService();
-    final int openTimeInMilliseconds = 30 * 60 * 1000; // 30 minutes
+    public static final Comparator<Queue> compareByEnterDate = Comparator.comparingLong(q -> q.getEnter_date().getTime());
+
+    protected final Logger logger = LoggerFactory.getLogger(Logger.class);
+    protected final Configuration configuration = ConfigurationHolder.getConfiguration();
+    protected final ParticipantDAO participantDAO = ParticipantDAO.getInstance();
+    protected final QueueDAO queueDAO = QueueDAO.getInstance();
+    protected final ScheduleDAO scheduleDAO = ScheduleDAO.getInstance();
+    protected final SubjectDAO subjectDAO = SubjectDAO.getInstance();
+    protected final WatchCallbackDAO watchCallbackDAO = WatchCallbackDAO.getInstance();
+    protected final StatusService statusService = new StatusService();
+
+    protected final int openTimeInMilliseconds = 30 * 60 * 1000; // 30 minutes
 
     public static Comparator<Queue> getQueueComparatorByEnterDate() {
         return compareByEnterDate;
