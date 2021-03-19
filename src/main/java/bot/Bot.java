@@ -20,10 +20,15 @@ public class Bot extends AbstractBot {
     private final Map<Long, Integer> groupChatsCalledTimes = new HashMap<>();
     private String today;
 
+    public static int calledTimes = 0;
+    public static int answeredTimes = 0;
+
     @Override
     public void onUpdateReceived(Update update) {
         today = Day.getDayById(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)).getName();
         if (update.hasMessage() && update.getMessage().hasText()) {
+            calledTimes++;
+
             String message = update.getMessage().getText();
             Chat chat = update.getMessage().getChat();
             long chatId = update.getMessage().getChatId();
@@ -43,12 +48,19 @@ public class Bot extends AbstractBot {
                         || message.equals(Command.HELP.getCommand() + "@" + getBotUsername())) {
                     sendHelp(chatId);
                 }
+                answeredTimes++;
+                return;
+            }
+
+            // if moderator request status
+            if (message.equals(Command.STATUS.getCommand()) && isModerator(chatId)) {
+                answeredTimes++;
+                statusService.sendStatus(chatId);
                 return;
             }
 
             // check commands
             Participant participant = participantDAO.getParticipantByChatId(chatId);
-            logger.info("\n***\nParticipant with chatId " + chatId + " called the bot with message " + message + "\n***\n");
             if (participant != null) {
 
                 // if participant change personal data update data in db
@@ -72,6 +84,7 @@ public class Bot extends AbstractBot {
                         addParticipantToQueueByScheduleId(chatId, Long.parseLong(operation[1]), participant);
                         updateWatchCallbackForEachParticipant();
                         participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
+                        answeredTimes++;
                         return;
                     }
 
@@ -86,6 +99,7 @@ public class Bot extends AbstractBot {
                         removeParticipantFromQueueByScheduleId(chatId, Long.parseLong(operation[1]), participant);
                         updateWatchCallbackForEachParticipant();
                         participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
+                        answeredTimes++;
                         return;
                     }
 
@@ -103,8 +117,6 @@ public class Bot extends AbstractBot {
                 } else if (message.equals(Command.BAN.getCommand()) && isModerator(chatId)) {
                     // TODO
                     sendSimpleMessage(chatId, "Ця команда поки що немає змісту, вона запрацює із розширенням функціоналу :)");
-                } else if (message.equals(Command.STATUS.getCommand()) && isModerator(chatId)) {
-                    statusService.sendStatus(chatId);
                 } else {
                     sendSimpleMessage(chatId, "Я тебе не розумію, скористайся командою /help");
                     participantDAO.updateParticipantOperationStatus(participant.getId(), Command.NONE.getCommand());
@@ -128,6 +140,7 @@ public class Bot extends AbstractBot {
                     sendSimpleMessage(chatId, "Надішли /start щоб почати, інакше буду тебе ігнорувати\uD83D\uDE48");
                 }
             }
+            answeredTimes++;
         } else if (update.hasCallbackQuery()) {
             String data = update.getCallbackQuery().getData();
             Chat chat = update.getCallbackQuery().getMessage().getChat();
@@ -202,6 +215,7 @@ public class Bot extends AbstractBot {
             if (callback != null) {
                 callback.setSchedule(schedule);
                 callback.setMessageId(messageId);
+                watchCallbackDAO.updateWatchCallback(callback);
             } else {
                 callback = new WatchCallback();
                 callback.setParticipant(participant);

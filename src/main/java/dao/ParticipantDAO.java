@@ -31,6 +31,7 @@ public final class ParticipantDAO {
     public Participant getParticipantByChatId(long chatId) {
         final Query query = session.createQuery("from Participant p where p.chatId = :chatId");
         query.setLong("chatId", chatId);
+        session.clear();
         return (Participant) query.uniqueResult();
     }
 

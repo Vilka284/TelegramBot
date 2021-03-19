@@ -1,5 +1,6 @@
 package service;
 
+import bot.Bot;
 import bot.MessageSender;
 
 import java.io.BufferedReader;
@@ -17,8 +18,14 @@ public class StatusService {
 
     public void sendStatus(long chatId) {
         String temperature = "\uD83C\uDF21 Температура: " + executeCommand("vcgencmd measure_temp");
-        String workingTime = "⏱ Час роботи: " + (int) ((currentTimeMillis() - startTime) / 3600000) + " годин.";
-        messageSender.sendMessage(chatId, "✉️Статус бота ✉\n\n" + temperature + workingTime);
+        String workingTime = "\n⏱ Час роботи: " + (int) ((currentTimeMillis() - startTime) / 3600000) + " годин.";
+        String calledTimes = "\n\uD83D\uDD3B Викликано: " + Bot.calledTimes + " раз.";
+        String answeredTimes = "\n\uD83D\uDD3A Відповів: " + Bot.answeredTimes + " раз.";
+        messageSender.sendMessage(chatId, "✉️Статус бота ✉\n\n"
+                + temperature
+                + workingTime
+                + calledTimes
+                + answeredTimes);
     }
 
     private String executeCommand(String command) {

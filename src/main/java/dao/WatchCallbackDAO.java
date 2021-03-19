@@ -1,5 +1,6 @@
 package dao;
 
+import entity.Participant;
 import entity.WatchCallback;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -38,6 +39,13 @@ public final class WatchCallbackDAO {
     public void addWatchCallback(WatchCallback callback) {
         final Transaction transaction = session.beginTransaction();
         session.save(callback);
+        transaction.commit();
+    }
+
+    public void updateWatchCallback(WatchCallback callback) {
+        final Transaction transaction = session.beginTransaction();
+        session.update(callback);
+        session.flush();
         transaction.commit();
     }
 }
