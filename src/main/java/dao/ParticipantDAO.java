@@ -20,8 +20,13 @@ public final class ParticipantDAO {
 
     public void addParticipant(Participant participant) {
         final Transaction transaction = session.beginTransaction();
-        session.save(participant);
-        transaction.commit();
+        try {
+            session.save(participant);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public Participant getParticipantById(long id) {
@@ -42,28 +47,43 @@ public final class ParticipantDAO {
 
     public Participant updateParticipantData(long id, String name, String tag) {
         final Transaction transaction = session.beginTransaction();
-        Participant participant = session.load(Participant.class, id);
-        participant.setName(name);
-        participant.setTag(tag);
-        session.update(participant);
-        session.flush();
-        transaction.commit();
+        try {
+            Participant participant = session.load(Participant.class, id);
+            participant.setName(name);
+            participant.setTag(tag);
+            session.update(participant);
+            session.flush();
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
         return getParticipantById(id);
     }
 
     public void updateParticipantOperationStatus(long id, String operation) {
         final Transaction transaction = session.beginTransaction();
-        Participant participant = session.load(Participant.class, id);
-        participant.setOperation(operation);
-        session.update(participant);
-        session.flush();
-        transaction.commit();
+        try {
+            Participant participant = session.load(Participant.class, id);
+            participant.setOperation(operation);
+            session.update(participant);
+            session.flush();
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public void removeParticipant(long id) {
         final Transaction transaction = session.beginTransaction();
-        Participant participant = session.load(Participant.class, id);
-        session.delete(participant);
-        transaction.commit();
+        try {
+            Participant participant = session.load(Participant.class, id);
+            session.delete(participant);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 }

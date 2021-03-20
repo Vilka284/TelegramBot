@@ -7,7 +7,7 @@ create table participant
     id        serial primary key,
     tag       text unique,
     name      text,
-    chat_id   int unique not null,
+    chat_id   bigint unique not null,
     operation text       not null -- last made operation
 );
 

@@ -20,8 +20,13 @@ public final class SubjectDAO {
 
     public void addSubject(Subject subject) {
         final Transaction transaction = session.beginTransaction();
-        session.save(subject);
-        transaction.commit();
+        try {
+            session.save(subject);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public Subject getSubjectById(long id) {

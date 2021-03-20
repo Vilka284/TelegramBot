@@ -42,8 +42,13 @@ public final class ScheduleDAO {
 
     public void addSchedule(Schedule schedule) {
         final Transaction transaction = session.beginTransaction();
-        session.save(schedule);
-        transaction.commit();
+        try {
+            session.save(schedule);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public List<Schedule> getScheduleListByDay(String day) {

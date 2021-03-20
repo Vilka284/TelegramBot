@@ -1,6 +1,5 @@
 package dao;
 
-import entity.Participant;
 import entity.WatchCallback;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -25,9 +24,14 @@ public final class WatchCallbackDAO {
 
     public void clearAllCallbacks() {
         final Transaction transaction = session.beginTransaction();
-        final Query query = session.createQuery("delete from WatchCallback");
-        query.executeUpdate();
-        transaction.commit();
+        try {
+            final Query query = session.createQuery("delete from WatchCallback");
+            query.executeUpdate();
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public WatchCallback getCallbackByParticipantId(long id) {
@@ -38,14 +42,24 @@ public final class WatchCallbackDAO {
 
     public void addWatchCallback(WatchCallback callback) {
         final Transaction transaction = session.beginTransaction();
-        session.save(callback);
-        transaction.commit();
+        try {
+            session.save(callback);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public void updateWatchCallback(WatchCallback callback) {
         final Transaction transaction = session.beginTransaction();
-        session.update(callback);
-        session.flush();
-        transaction.commit();
+        try {
+            session.update(callback);
+            session.flush();
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 }

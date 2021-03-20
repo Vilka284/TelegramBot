@@ -30,37 +30,62 @@ public final class QueueDAO {
 
     public void addToQueue(Queue queue) {
         final Transaction transaction = session.beginTransaction();
-        session.save(queue);
-        transaction.commit();
+        try {
+            session.save(queue);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public void removeFromQueue(long id) {
         final Transaction transaction = session.beginTransaction();
-        Queue queue = getQueueById(id);
-        session.delete(queue);
-        transaction.commit();
+        try {
+            Queue queue = getQueueById(id);
+            session.delete(queue);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public void changeParticipantStatus(long id, String status) {
         final Transaction transaction = session.beginTransaction();
-        Queue queue = getQueueById(id);
-        queue.setStatus(status);
-        session.save(queue);
-        transaction.commit();
+        try {
+            Queue queue = getQueueById(id);
+            queue.setStatus(status);
+            session.save(queue);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public void setNowTime(long id) {
         final Transaction transaction = session.beginTransaction();
-        Queue queue = getQueueById(id);
-        queue.setEnter_date(new Date());
-        session.save(queue);
-        transaction.commit();
+        try {
+            Queue queue = getQueueById(id);
+            queue.setEnter_date(new Date());
+            session.save(queue);
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 
     public void clearQueue() {
         final Transaction transaction = session.beginTransaction();
-        final Query query = session.createQuery("delete from Queue");
-        query.executeUpdate();
-        transaction.commit();
+        try {
+            final Query query = session.createQuery("delete from Queue");
+            query.executeUpdate();
+            transaction.commit();
+        } catch (RuntimeException e) {
+            transaction.rollback();
+            e.printStackTrace();
+        }
     }
 }

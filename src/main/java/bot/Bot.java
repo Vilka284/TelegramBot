@@ -59,6 +59,10 @@ public class Bot extends AbstractBot {
                 return;
             }
 
+            logger.info("***");
+            logger.info("Participant " + chat.getFirstName() + " with chatId: " + chatId + " called bot with command " + message);
+            logger.info("***");
+
             // check commands
             Participant participant = participantDAO.getParticipantByChatId(chatId);
             if (participant != null) {
@@ -146,6 +150,10 @@ public class Bot extends AbstractBot {
             Chat chat = update.getCallbackQuery().getMessage().getChat();
             long messageId = update.getCallbackQuery().getMessage().getMessageId();
             long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+            logger.info("\n***\n");
+            logger.info("Participant " + chat.getFirstName() + " with chatId: " + chatId + " called bot");
+            logger.info("\n***\n");
 
             // check operations
             try {
