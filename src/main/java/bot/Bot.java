@@ -1,14 +1,15 @@
 package bot;
 
-import entity.*;
+import entity.Participant;
 import entity.Queue;
+import entity.Schedule;
+import entity.WatchCallback;
 import enumeration.Command;
 import enumeration.Day;
 import enumeration.Status;
 import org.hibernate.ObjectNotFoundException;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.sql.Time;
 import java.util.*;
@@ -30,6 +31,8 @@ public class Bot extends AbstractBot {
             calledTimes++;
 
             String message = update.getMessage().getText();
+            String tag = update.getMessage().getFrom().getUserName();
+            String name = update.getMessage().getFrom().getFirstName();
             Chat chat = update.getMessage().getChat();
             long chatId = update.getMessage().getChatId();
 
@@ -60,7 +63,7 @@ public class Bot extends AbstractBot {
             }
 
             logger.info("***");
-            logger.info("Participant " + chat.getFirstName() + " with chatId: " + chatId + " called bot with command " + message);
+            logger.info("Participant " + name + " with chatId: " + chatId + " called bot with command " + message);
             logger.info("***");
 
             // check commands
@@ -68,12 +71,15 @@ public class Bot extends AbstractBot {
             if (participant != null) {
 
                 // if participant change personal data update data in db
-                if (!participant.getName().equals(update.getMessage().getFrom().getFirstName())
-                        || !participant.getTag().equals(update.getMessage().getFrom().getUserName())) {
-                    participant = participantDAO.updateParticipantData(participant.getId(),
-                            update.getMessage().getFrom().getFirstName(),
-                            update.getMessage().getFrom().getUserName());
+                if (!Objects.equals(participant.getName(), name)
+                        || !Objects.equals(participant.getTag(), tag)) {
+                    logger.info("***");
+                    logger.info("Participant needs update " + participant.getName() + " -> " + name + " | "
+                            + participant.getTag() + " -> " + tag);
+                    logger.info("***");
+                    participant = participantDAO.updateParticipantData(participant.getId(), name, tag);
                 }
+
 
                 if (message.equals(Command.START.getCommand())) {
                     sendSimpleMessage(chatId, "Ти вже є учасником.");
@@ -128,9 +134,8 @@ public class Bot extends AbstractBot {
             } else {
                 if (message.equals(Command.START.getCommand())) {
                     Participant newParticipant = new Participant();
-                    User from = update.getMessage().getFrom();
-                    newParticipant.setTag(from.getUserName());
-                    newParticipant.setName(from.getFirstName());
+                    newParticipant.setTag(tag);
+                    newParticipant.setName(name);
                     newParticipant.setChatId(chatId);
                     newParticipant.setOperation(Command.NONE.getCommand());
                     participantDAO.addParticipant(newParticipant);
@@ -151,9 +156,9 @@ public class Bot extends AbstractBot {
             long messageId = update.getCallbackQuery().getMessage().getMessageId();
             long chatId = update.getCallbackQuery().getMessage().getChatId();
 
-            logger.info("\n***\n");
+            logger.info("***");
             logger.info("Participant " + chat.getFirstName() + " with chatId: " + chatId + " used callback with number " + data);
-            logger.info("\n***\n");
+            logger.info("***");
 
             // check operations
             try {
