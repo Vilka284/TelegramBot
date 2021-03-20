@@ -152,7 +152,7 @@ public class Bot extends AbstractBot {
             long chatId = update.getCallbackQuery().getMessage().getChatId();
 
             logger.info("\n***\n");
-            logger.info("Participant " + chat.getFirstName() + " with chatId: " + chatId + " called bot");
+            logger.info("Participant " + chat.getFirstName() + " with chatId: " + chatId + " used callback with number " + data);
             logger.info("\n***\n");
 
             // check operations
