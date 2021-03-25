@@ -1,0 +1,20 @@
+# This is a bot unit file to autorun bot on a startup
+# Use next command sequence
+
+# sudo nano /lib/systemd/system/bot.service
+# sudo chmod +x /lib/systemd/system/bot.service
+# sudo systemctl daemon-reload
+# sudo systemctl start bot.service
+
+[Unit]
+Description=Telegram bot
+After=network-online.target
+
+[Service]
+WorkingDirectory=/home/pi/Bot/TelegramBot
+ExecStartPre=/opt/maven/apache-maven-3.6.3/bin/mvn clean install
+ExecStart=/opt/maven/apache-maven-3.6.3/bin/mvn exec:java -Dexec.mainClass=Main
+TimeoutSec=600
+
+[Install]
+WantedBy=multi-user.target

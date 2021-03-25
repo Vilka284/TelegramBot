@@ -17,12 +17,11 @@ import java.util.stream.Collectors;
 
 public class Bot extends AbstractBot {
 
+    public static int calledTimes = 0;
+    public static int answeredTimes = 0;
     // Map made for fun to send specific message when times of bot being called exceeds N :)
     private final Map<Long, Integer> groupChatsCalledTimes = new HashMap<>();
     private String today;
-
-    public static int calledTimes = 0;
-    public static int answeredTimes = 0;
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -55,11 +54,17 @@ public class Bot extends AbstractBot {
                 return;
             }
 
-            // if moderator request status
-            if (message.equals(Command.STATUS.getCommand()) && isModerator(chatId)) {
-                answeredTimes++;
-                statusService.sendStatus(chatId);
-                return;
+            // if owner request status
+            if (isOwner(chatId)) {
+                if (message.equals(Command.STATUS.getCommand())) {
+                    statusService.sendStatus(chatId);
+                    answeredTimes++;
+                    return;
+                } else if (message.equals(Command.LOGS.getCommand())) {
+                    statusService.sendLogs(chatId);
+                    answeredTimes++;
+                    return;
+                }
             }
 
             logger.info("***");
@@ -599,5 +604,9 @@ public class Bot extends AbstractBot {
 
     private boolean isModerator(long chatId) {
         return configuration.getTelegram().getModerators().contains(chatId);
+    }
+
+    private boolean isOwner(long chatId) {
+        return configuration.getTelegram().getOwner().getChatId().equals(chatId);
     }
 }

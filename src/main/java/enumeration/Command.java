@@ -15,6 +15,7 @@ public enum Command {
     REMOVE_PARTICIPANT("/removeparticipant", "buffer command", false, false), // buffer command
     BAN("/ban", "Видаляй учасників цією командою назавжди ", true, true),
     STATUS("/status", "Статус бота", true, true),
+    LOGS("/logs", "Логи", false, true),
 
     NONE("none", "", false, false);
 

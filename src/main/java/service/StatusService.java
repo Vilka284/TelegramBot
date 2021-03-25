@@ -3,8 +3,7 @@ package service;
 import bot.Bot;
 import bot.MessageSender;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.File;
 
 import static config.Configuration.startTime;
 import static java.lang.System.currentTimeMillis;
@@ -14,11 +13,14 @@ import static java.lang.System.currentTimeMillis;
  */
 public class StatusService {
 
+    private final long millisToHour = 3600000;
+
     private final MessageSender messageSender = new MessageSender();
+    private final CommandExecutorService commandExecutor = new CommandExecutorService();
 
     public void sendStatus(long chatId) {
-        String temperature = "\uD83C\uDF21 Температура: " + executeCommand("vcgencmd measure_temp");
-        String workingTime = "\n⏱ Час роботи: " + (int) ((currentTimeMillis() - startTime) / 3600000) + " годин.";
+        String temperature = "\uD83C\uDF21 Температура: " + commandExecutor.executeCommandWithResult("vcgencmd measure_temp");
+        String workingTime = "\n⏱ Час роботи: " + (int) ((currentTimeMillis() - startTime) / millisToHour) + " годин.";
         String calledTimes = "\n\uD83D\uDD3B Викликано: " + Bot.calledTimes + " раз.";
         String answeredTimes = "\n\uD83D\uDD3A Відповів: " + Bot.answeredTimes + " раз.";
         messageSender.sendMessage(chatId, "✉️Статус бота ✉\n\n"
@@ -28,21 +30,13 @@ public class StatusService {
                 + answeredTimes);
     }
 
-    private String executeCommand(String command) {
-        StringBuilder message = new StringBuilder();
-        try {
-            String nextString;
-            Process process = Runtime.getRuntime().exec(command);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            while ((nextString = reader.readLine()) != null)
-                message.append(nextString).append("\n");
-            process.waitFor();
-            if (process.exitValue() != 0) {
-                return "Помилка виконання команди\n";
-            }
-            process.destroy();
-        } catch (Exception ignored) {
-        }
-        return message.toString();
+    public void sendLogs(long chatId) {
+        String fileName = "logs.txt";
+        String scriptName = "logs.sh";
+        String path = System.getProperty("user.dir");
+        String scriptPath = "/src/main/resources/scripts/";
+        commandExecutor.executeCommand("/bin/sh" + path + scriptPath + scriptName);
+        File file = new File(path + scriptPath + fileName);
+        messageSender.sendFile(chatId, file, fileName);
     }
 }

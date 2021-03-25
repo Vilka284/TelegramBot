@@ -12,14 +12,14 @@ import java.nio.file.Paths;
 public class ConfigurationMapper {
 
     private static final String configFile = "src/main/resources/config/application.yml";
-    private final Logger logger = LoggerFactory.getLogger(Logger.class);
+    private static final Logger logger = LoggerFactory.getLogger(Logger.class);
 
-    public void run() {
+    public static void runConfigurationMapping() {
         final Yaml yamlMapper = new Yaml();
         try (InputStream in = Files.newInputStream(Paths.get(configFile))) {
             Configuration config = yamlMapper.loadAs(in, Configuration.class);
             ConfigurationHolder.setConfiguration(config);
-            logger.info(config.toString());
+            //logger.info(config.toString());
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
