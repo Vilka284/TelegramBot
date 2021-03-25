@@ -35,7 +35,7 @@ public class StatusService {
         String scriptName = "logs.sh";
         String path = System.getProperty("user.dir");
         String scriptPath = "/src/main/resources/scripts/";
-        commandExecutor.executeCommand("/bin/sh" + path + scriptPath + scriptName);
+        commandExecutor.executeCommand("/bin/bash " + path + scriptPath + scriptName);
         File file = new File(path + scriptPath + fileName);
         messageSender.sendFile(chatId, file, fileName);
     }
