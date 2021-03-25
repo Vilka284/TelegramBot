@@ -35,6 +35,10 @@ public class Bot extends AbstractBot {
             Chat chat = update.getMessage().getChat();
             long chatId = update.getMessage().getChatId();
 
+            logger.info("***");
+            logger.info("Participant " + name + " with chatId: " + chatId + " called bot with command " + message);
+            logger.info("***");
+
             // if bot in group
             if (chat.getType().equals("group")
                     || chat.getType().equals("supergroup")) {
@@ -66,10 +70,6 @@ public class Bot extends AbstractBot {
                     return;
                 }
             }
-
-            logger.info("***");
-            logger.info("Participant " + name + " with chatId: " + chatId + " called bot with command " + message);
-            logger.info("***");
 
             // check commands
             Participant participant = participantDAO.getParticipantByChatId(chatId);
