@@ -31,11 +31,13 @@ public class CommandExecutorService {
 
     public void executeCommand(String command) {
         try {
+            logger.info("Native command execution: " + command);
             Process process = Runtime.getRuntime().exec(command);
             lookForErrors(process);
             process.waitFor();
             process.destroy();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            logger.error(e.getMessage());
         }
     }
 
@@ -44,7 +46,7 @@ public class CommandExecutorService {
         // Read any errors from the attempted command
         String error = stdError.readLine();
         if (error != null) {
-            logger.error("Command execution error: " + error);
+            logger.error("Native command execution error: " + error);
             String s = null;
             while ((s = stdError.readLine()) != null) {
                 logger.error(s);
