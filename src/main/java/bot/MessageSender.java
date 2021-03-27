@@ -49,10 +49,14 @@ public class MessageSender extends DefaultAbsSender {
     public void sendFile(long chatId, File file, String fileName) {
         SendDocument sendDocument = new SendDocument();
         sendDocument.setChatId(String.valueOf(chatId));
-        InputFile inputFile = new InputFile();
-        inputFile.setMedia(file, fileName);
-        sendDocument.setDocument(inputFile);
-        send(sendDocument);
+        if (file.exists()) {
+            InputFile inputFile = new InputFile();
+            inputFile.setMedia(file, fileName);
+            sendDocument.setDocument(inputFile);
+            send(sendDocument);
+        } else {
+            sendMessage(chatId, "Не вдалось знайти файл\uD83D\uDE14");
+        }
     }
 
     private void send(SendMessage sendMessage) {

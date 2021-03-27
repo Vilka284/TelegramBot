@@ -61,12 +61,12 @@ public class Bot extends AbstractBot {
             // if owner request status
             if (isOwner(chatId)) {
                 if (message.equals(Command.STATUS.getCommand())) {
-                    statusService.sendStatus(chatId);
                     answeredTimes++;
+                    statusService.sendStatus(chatId);
                     return;
                 } else if (message.equals(Command.LOGS.getCommand())) {
-                    statusService.sendLogs(chatId);
                     answeredTimes++;
+                    statusService.sendLogs(chatId);
                     return;
                 }
             }

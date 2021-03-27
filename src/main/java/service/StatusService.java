@@ -30,6 +30,8 @@ public class StatusService {
                 + answeredTimes);
     }
 
+    // This logs retrieving adapted for raspberry pi bot unit file
+    // Use your personal logging method
     public void sendLogs(long chatId) {
         String fileName = "logs.txt";
         String scriptName = "logs.sh";
