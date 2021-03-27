@@ -14,12 +14,14 @@ import static java.lang.System.currentTimeMillis;
 public class StatusService {
 
     private final long millisToHour = 3600000;
+    private final String relativeScriptsPath = "/src/main/resources/scripts/";
+    private final String absoluteCurrentDirectoryPath = System.getProperty("user.dir");
 
     private final MessageSender messageSender = new MessageSender();
     private final CommandExecutorService commandExecutor = new CommandExecutorService();
 
     public void sendStatus(long chatId) {
-        String temperature = "\uD83C\uDF21 Температура: " + commandExecutor.executeCommandWithResult("vcgencmd measure_temp");
+        String temperature = "\uD83C\uDF21 Температура: " + getTemperature();
         String workingTime = "\n⏱ Час роботи: " + (int) ((currentTimeMillis() - startTime) / millisToHour) + " годин.";
         String calledTimes = "\n\uD83D\uDD3B Викликано: " + Bot.calledTimes + " раз.";
         String answeredTimes = "\n\uD83D\uDD3A Відповів: " + Bot.answeredTimes + " раз.";
@@ -35,10 +37,14 @@ public class StatusService {
     public void sendLogs(long chatId) {
         String fileName = "logs.txt";
         String scriptName = "logs.sh";
-        String path = System.getProperty("user.dir");
-        String scriptPath = "/src/main/resources/scripts/";
-        commandExecutor.executeCommand("/bin/bash " + path + scriptPath + scriptName);
-        File file = new File(path + scriptPath + fileName);
+        commandExecutor.executeCommand("/bin/bash " + absoluteCurrentDirectoryPath + relativeScriptsPath + scriptName);
+        File file = new File(absoluteCurrentDirectoryPath + relativeScriptsPath + fileName);
         messageSender.sendFile(chatId, file, fileName);
+    }
+
+    private String getTemperature() {
+        String scriptName = "temp.sh";
+        return commandExecutor.executeCommandWithResult("/bin/bash " + absoluteCurrentDirectoryPath + relativeScriptsPath + scriptName);
+
     }
 }

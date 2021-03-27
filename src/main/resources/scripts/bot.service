@@ -1,5 +1,5 @@
-# This is a bot unit file to autorun bot on a startup
-# Use next command sequence
+# This is a bot unit file to auto run bot on a startup
+# Using the next command sequence
 
 # sudo nano /lib/systemd/system/bot.service
 # sudo chmod +x /lib/systemd/system/bot.service

@@ -21,6 +21,7 @@ public class CommandExecutorService {
                 message.append(nextString).append("\n");
             process.waitFor();
             if (process.exitValue() != 0) {
+                lookForErrors(process);
                 return "Помилка виконання команди\n";
             }
             process.destroy();
